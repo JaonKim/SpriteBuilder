@@ -79,6 +79,7 @@
 #import "SequencerStretchWindow.h"
 #import "SequencerSoundChannel.h"
 #import "SequencerCallbackChannel.h"
+#import "SoundFileImageController.h"
 #import "CustomPropSettingsWindow.h"
 #import "CustomPropSetting.h"
 #import "MainToolbarDelegate.h"
@@ -106,6 +107,7 @@
 #import "CCBProjCreator.h"
 #import "CCTextureCache.h"
 #import "CCLabelBMFont_Private.h"
+#import "WarningOutlineHandler.h"
 #import "CCNode+NodeInfo.h"
 #import <ExceptionHandling/NSExceptionHandler.h>
 #import <objc/runtime.h>
@@ -223,8 +225,15 @@ void ApplyCustomNodeVisitSwizzle()
     sequenceHandler.scroller = timelineScroller;
     sequenceHandler.scrollView = sequenceScrollView;
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSoundImages:) name:kSoundFileImageLoaded object:nil];
+    
     [self updateTimelineMenu];
     [sequenceHandler updateScaleSlider];
+}
+
+-(void)updateSoundImages:(NSNotification*)notice
+{
+    [outlineHierarchy reloadData];
 }
 
 - (void) setupTabBar
@@ -287,6 +296,13 @@ void ApplyCustomNodeVisitSwizzle()
     itemNodes.keyEquivalent = @"";
     [items addObject:itemNodes];
     
+    NSImage* imgWarnings = [NSImage imageNamed:@"inspector-warning.png"];
+    [imgWarnings setTemplate:YES];
+    SMTabBarItem* itemWarnings = [[[SMTabBarItem alloc] initWithImage:imgWarnings tag:3] autorelease];
+    itemWarnings.toolTip = @"Warnings view";
+    itemWarnings.keyEquivalent = @"";
+    [items addObject:itemWarnings];
+
     projectViewTabs.items = items;
     projectViewTabs.delegate = self;
 }
@@ -423,6 +439,13 @@ void ApplyCustomNodeVisitSwizzle()
     resourceManagerSplitView.delegate = previewViewOwner;
     
     [previewViewOwner setPreviewFile:NULL];
+    
+    //Setup warnings outline
+    warningOutlineHandler = [[WarningOutlineHandler alloc] init];
+    outlineWarnings.delegate = warningOutlineHandler;
+    outlineWarnings.target = warningOutlineHandler;
+    outlineWarnings.dataSource = warningOutlineHandler;
+    [self updateWarningsOutline];
 }
 
 - (void) setupGUIWindow
@@ -1048,6 +1071,20 @@ static BOOL hideAllToNextSeparator;
     [inspectorCodeDocumentView setFrameSize:NSMakeSize([inspectorCodeScroll contentSize].width, paneCodeOffset)];
     
     [propertyInspectorHandler updateTemplates];
+    
+    //Undocumented function that resets the KeyViewLoop.
+    if([inspectorDocumentView respondsToSelector:@selector(_setDefaultKeyViewLoop)])
+    {
+        [inspectorDocumentView performSelector:@selector(_setDefaultKeyViewLoop) withObject:nil];
+    }
+    
+    //Undocumented function that resets the KeyViewLoop.
+    if([inspectorCodeDocumentView respondsToSelector:@selector(_setDefaultKeyViewLoop)])
+    {
+        [inspectorCodeDocumentView performSelector:@selector(_setDefaultKeyViewLoop) withObject:nil];
+    }
+    
+
 }
 
 #pragma mark Populating menus
@@ -2728,7 +2765,10 @@ static BOOL hideAllToNextSeparator;
     // Update warnings button in toolbar
     [self updateWarningsButton];
     
-    if (warnings.warnings.count) [self pressedPublishTB:NULL];
+    if (warnings.warnings.count)
+    {
+        [projectViewTabs selectBarButtonIndex:3];
+    }
     
     // Run in Browser
     if (publisher.runAfterPublishing && publisher.browser)
@@ -2744,6 +2784,8 @@ static BOOL hideAllToNextSeparator;
     }
     
     [publisher release];
+    
+    
 }
 
 - (IBAction)openCocosPlayerConsole:(id)sender
@@ -3285,14 +3327,13 @@ static BOOL hideAllToNextSeparator;
 
 - (void) updateWarningsButton
 {
-    if (projectSettings.lastWarnings.warnings.count)
-    {
-        [segmPublishBtn setImage:[NSImage imageNamed:@"editor-warning.png"] forSegment:1];
-    }
-    else
-    {
-        [segmPublishBtn setImage:[NSImage imageNamed:@"editor-check.png"] forSegment:1];
-    }
+    [self updateWarningsOutline];
+}
+
+- (void) updateWarningsOutline
+{
+    [warningOutlineHandler updateWithWarnings:projectSettings.lastWarnings];
+    [outlineWarnings reloadData];
 }
 
 - (IBAction) menuSetCanvasBorder:(id)sender
