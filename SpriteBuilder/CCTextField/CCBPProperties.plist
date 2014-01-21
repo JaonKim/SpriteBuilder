@@ -5,7 +5,7 @@
 	<key>displayName</key>
 	<string>Text Field</string>
 	<key>ordering</key>
-	<integer>4010</integer>
+	<integer>12000</integer>
 	<key>description</key>
 	<string>Allows the user to enter text, sends events when the text finishes editing.</string>
 	<key>inheritsFrom</key>
@@ -111,6 +111,18 @@
 			<string>FloatScale</string>
 			<key>name</key>
 			<string>padding</string>
+		</dict>
+		<dict>
+			<key>type</key>
+			<string>Float</string>
+			<key>dontSetInEditor</key>
+			<true/>
+			<key>name</key>
+			<string>fontSize</string>
+			<key>displayName</key>
+			<string>Font size</string>
+			<key>default</key>
+			<integer>17</integer>
 		</dict>
 	</array>
 </dict>

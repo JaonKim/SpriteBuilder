@@ -30,8 +30,6 @@
 #import "ResourceManager.h"
 #import "ResourceManagerUtil.h"
 #import "AppDelegate.h"
-#import "PlayerConnection.h"
-#import "PlayerDeviceInfo.h"
 #import "ResourceManagerOutlineHandler.h"
 
 #import <ApplicationServices/ApplicationServices.h>
@@ -74,7 +72,6 @@
 @synthesize deviceOrientationLandscapeLeft;
 @synthesize deviceOrientationLandscapeRight;
 @synthesize resourceAutoScaleFactor;
-@synthesize breakpoints;
 @synthesize versionStr;
 @synthesize needRepublish;
 @synthesize lastWarnings;
@@ -118,11 +115,9 @@
     self.publishAudioQuality_ios = 4;
     self.publishAudioQuality_android = 4;
     
-    self.tabletPositionScaleFactorType = kCCBTabletScale200;
+    self.tabletPositionScaleFactor = 2.0f;
     
-    breakpoints = [[NSMutableDictionary dictionary] retain];
-    
-    resourceProperties = [[NSMutableDictionary dictionary] retain];
+    resourceProperties = [NSMutableDictionary dictionary];
     
     // Load available exporters
     self.availableExporters = [NSMutableArray array];
@@ -145,7 +140,6 @@
     // Check filetype
     if (![[dict objectForKey:@"fileType"] isEqualToString:@"CocosBuilderProject"])
     {
-        [self release];
         return NULL;
     }
     
@@ -196,17 +190,17 @@
     self.resourceAutoScaleFactor = [[dict objectForKey:@"resourceAutoScaleFactor"]intValue];
     if (resourceAutoScaleFactor == 0) self.resourceAutoScaleFactor = 4;
     
-    self.tabletPositionScaleFactorType = [[dict objectForKey:@"tabletPositionScaleFactorType"] intValue];
     self.deviceScaling = [[dict objectForKey:@"deviceScaling"] intValue];
     self.defaultOrientation = [[dict objectForKey:@"defaultOrientation"] intValue];
     self.designTarget = [[dict objectForKey:@"designTarget"] intValue];
+    
+    self.tabletPositionScaleFactor = 2.0f;
     
     NSString* mainCCB = [dict objectForKey:@"javascriptMainCCB"];
     if (!mainCCB) mainCCB = @"";
     self.javascriptMainCCB = mainCCB;
     
     // Load resource properties
-    [resourceProperties release];
     resourceProperties = [[dict objectForKey:@"resourceProperties"] mutableCopy];
     
     [self detectBrowserPresence];
@@ -228,18 +222,6 @@
     return self;
 }
 
-- (void) dealloc
-{
-    self.versionStr = NULL;
-    self.resourcePaths = NULL;
-    self.projectPath = NULL;
-    self.publishDirectory = NULL;
-    self.exporter = NULL;
-    self.availableExporters = NULL;
-    [resourceProperties release];
-    [breakpoints release];
-    [super dealloc];
-}
 
 - (NSString*) exporter
 {
@@ -292,7 +274,6 @@
     [dict setObject:[NSNumber numberWithBool:deviceOrientationLandscapeRight] forKey:@"deviceOrientationLandscapeRight"];
     [dict setObject:[NSNumber numberWithInt:resourceAutoScaleFactor] forKey:@"resourceAutoScaleFactor"];
     
-    [dict setObject:[NSNumber numberWithInt:self.tabletPositionScaleFactorType] forKey:@"tabletPositionScaleFactorType"];
     [dict setObject:[NSNumber numberWithInt:self.designTarget] forKey:@"designTarget"];
     [dict setObject:[NSNumber numberWithInt:self.defaultOrientation] forKey:@"defaultOrientation"];
     [dict setObject:[NSNumber numberWithInt:self.deviceScaling] forKey:@"deviceScaling"];
@@ -319,6 +300,7 @@
     return dict;
 }
 
+@dynamic absoluteResourcePaths;
 - (NSArray*) absoluteResourcePaths
 {
     NSString* projectDirectory = [self.projectPath stringByDeletingLastPathComponent];
@@ -340,6 +322,7 @@
     return paths;
 }
 
+@dynamic projectPathHashed;
 - (NSString*) projectPathHashed
 {
     if (projectPath)
@@ -353,12 +336,14 @@
     }
 }
 
+@dynamic displayCacheDirectory;
 - (NSString*) displayCacheDirectory
 {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     return [[[[paths objectAtIndex:0] stringByAppendingPathComponent:@"com.cocosbuilder.CocosBuilder"] stringByAppendingPathComponent:@"display"]stringByAppendingPathComponent:self.projectPathHashed];
 }
 
+/*
 - (NSString*) publishCacheDirectory
 {
     NSString* uuid = [PlayerConnection sharedPlayerConnection].selectedDeviceInfo.uuid;
@@ -366,8 +351,9 @@
     
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
     return [[[[[paths objectAtIndex:0] stringByAppendingPathComponent:@"com.cocosbuilder.CocosBuilder"] stringByAppendingPathComponent:@"publish"]stringByAppendingPathComponent:self.projectPathHashed] stringByAppendingPathComponent:uuid];
-}
+}*/
 
+@dynamic tempSpriteSheetCacheDirectory;
 - (NSString*) tempSpriteSheetCacheDirectory
 {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
@@ -402,7 +388,7 @@
     [self setValue:[NSNumber numberWithBool:YES] forResource:res andKey:@"isSmartSpriteSheet"];
     
     [self store];
-    [[AppDelegate appDelegate].resManager notifyResourceObserversResourceListUpdated];
+    [[ResourceManager sharedManager] notifyResourceObserversResourceListUpdated];
     [[AppDelegate appDelegate].projectOutlineHandler updateSelectionPreview];
 }
 
@@ -413,7 +399,7 @@
     [self removeObjectForResource:res andKey:@"isSmartSpriteSheet"];
     
     [self store];
-    [[AppDelegate appDelegate].resManager notifyResourceObserversResourceListUpdated];
+    [[ResourceManager sharedManager] notifyResourceObserversResourceListUpdated];
     [[AppDelegate appDelegate].projectOutlineHandler updateSelectionPreview];
 }
 
@@ -530,38 +516,6 @@
     [resourceProperties removeObjectForKey:relPathOld];
 }
 
-- (void) toggleBreakpointForFile:(NSString*)file onLine:(int)line
-{
-    // Get breakpoints for file
-    NSMutableSet* bps = [breakpoints objectForKey:file];
-    if (!bps)
-    {
-        bps = [NSMutableSet set];
-        [breakpoints setObject:bps forKey:file];
-    }
-    
-    NSNumber* num = [NSNumber numberWithInt:line];
-    if ([bps containsObject:num])
-    {
-        [bps removeObject:num];
-    }
-    else
-    {
-        [bps addObject:num];
-    }
-    
-    // Send new list of bps to player
-    [[PlayerConnection sharedPlayerConnection] debugSendBreakpoints:breakpoints];
-}
-
-- (NSSet*) breakpointsForFile:(NSString*)file
-{
-    NSSet* bps = [breakpoints objectForKey:file];
-    if (!bps) bps = [NSSet set];
-    
-    return bps;
-}
-
 - (void) detectBrowserPresence
 {
     isSafariExist = FALSE;
@@ -595,11 +549,4 @@
     return version;
 }
 
-- (void) setTabletPositionScaleFactorType:(int)tabletPositionScaleFactorType
-{
-    _tabletPositionScaleFactorType = tabletPositionScaleFactorType;
-    if (tabletPositionScaleFactorType == kCCBTabletScale200) self.tabletPositionScaleFactor = 2.0f;
-    else if (tabletPositionScaleFactorType == kCCBTabletScale180) self.tabletPositionScaleFactor = 1.8f;
-    else if (tabletPositionScaleFactorType == kCCBTabletScale240) self.tabletPositionScaleFactor = 2.4f;
-}
 @end

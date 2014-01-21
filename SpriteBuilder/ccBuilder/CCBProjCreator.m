@@ -32,10 +32,12 @@
     [zipTask setArguments:args];
     [zipTask launch];
     [zipTask waitUntilExit];
-    [zipTask release];
     
     // Rename ccbproj
     [fm moveItemAtPath:[[fileName stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"PROJECTNAME.ccbproj"] toPath:fileName error:NULL];
+    
+    // Rename approj
+    [fm moveItemAtPath:[[fileName stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"PROJECTNAME.approj"] toPath:fileName error:NULL];
     
     // Update the Xcode project
     NSString* xcodeFileName = [[fileName stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"PROJECTNAME.xcodeproj"];
@@ -45,25 +47,36 @@
     [self setName:projName inFile:[xcodeFileName stringByAppendingPathComponent:@"project.pbxproj"]];
     
     // Update workspace data
-    NSString *xcworkspace = [xcodeFileName stringByAppendingPathComponent:@"project.xcworkspace/contents.xcworkspacedata"];
-    if ([fm fileExistsAtPath:xcworkspace]) {
-        [self setName:projName inFile:xcworkspace];
-    }
+    [self setName:projName inFile:[xcodeFileName stringByAppendingPathComponent:@"project.xcworkspace/contents.xcworkspacedata"]];
     
     // Update scheme
-    NSString* schemeFile = [xcodeFileName stringByAppendingPathComponent:@"xcshareddata/xcschemes/PROJECTNAME.xcscheme"];
-    if ([fm fileExistsAtPath:schemeFile]) {
-        [self setName:projName inFile:schemeFile];
+    [self setName:projName inFile:[xcodeFileName stringByAppendingPathComponent:@"xcshareddata/xcschemes/PROJECTNAME.xcscheme"]];
     
-        // Rename scheme file
-        NSString* newSchemeFile = [[[schemeFile stringByDeletingLastPathComponent] stringByAppendingPathComponent:projName] stringByAppendingPathExtension:@"xcscheme"];
-        [fm moveItemAtPath:schemeFile toPath:newSchemeFile error:NULL];
-    }
+    // Rename scheme file
+    NSString* schemeFile = [xcodeFileName stringByAppendingPathComponent:@"xcshareddata/xcschemes/PROJECTNAME.xcscheme"];
+    NSString* newSchemeFile = [[[schemeFile stringByDeletingLastPathComponent] stringByAppendingPathComponent:projName] stringByAppendingPathExtension:@"xcscheme"];
+    [fm moveItemAtPath:schemeFile toPath:newSchemeFile error:NULL];
     
     // Rename Xcode project file
     NSString* newXcodeFileName = [[[xcodeFileName stringByDeletingLastPathComponent] stringByAppendingPathComponent:projName] stringByAppendingPathExtension:@"xcodeproj"];
     
     [fm moveItemAtPath:xcodeFileName toPath:newXcodeFileName error:NULL];
+    
+    // Rename Approj project file (apportable)
+    NSString* approjFileName = [[fileName stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"PROJECTNAME.approj"];
+    projName = [[fileName lastPathComponent] stringByDeletingPathExtension];
+
+    NSString* newApprojFileName = [[[approjFileName stringByDeletingLastPathComponent] stringByAppendingPathComponent:projName] stringByAppendingPathExtension:@"approj"];
+    [fm moveItemAtPath:approjFileName toPath:newApprojFileName error:NULL];
+
+    // configure default configuration.json and include opengles2 as a feature
+    NSError *error = nil;
+    NSString *apportableConfigFile = [NSString stringWithFormat:@"%@%@", newApprojFileName, @"/configuration.json"];
+    NSString *apportableConfigurationContents = [NSString stringWithContentsOfFile:apportableConfigFile encoding:NSUTF8StringEncoding error:&error];
+    
+    NSString *replacement = [NSString stringWithFormat:@"\"default_target\": {\"project\": \"%@\", \"project_config\": \"Release\", \"target\": \"%@\"},", projName, projName];
+    apportableConfigurationContents = [apportableConfigurationContents stringByReplacingOccurrencesOfString:@"default_target" withString:replacement];
+    [apportableConfigurationContents writeToFile:apportableConfigFile atomically:YES encoding:NSUTF8StringEncoding error:&error];
     
     return [fm fileExistsAtPath:fileName];
 }
@@ -80,7 +93,6 @@
     [renameTask setArguments:args];
     [renameTask launch];
     [renameTask waitUntilExit];
-    [renameTask release];
 }
 
 

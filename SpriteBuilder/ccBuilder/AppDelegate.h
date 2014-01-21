@@ -28,8 +28,9 @@
 #import "cocos2d.h"
 #import "PSMTabBarControl.h"
 #import "SMTabBar.h"
+#import <HockeySDK/HockeySDK.h>
 
-#define kCCBNumCanvasDevices 12
+#define kCCBNumCanvasDevices 14
 
 enum {
     kCCBCanvasSizeCustom = 0,
@@ -39,6 +40,8 @@ enum {
     kCCBCanvasSizeIPhone5Portrait,
     kCCBCanvasSizeIPadLandscape,
     kCCBCanvasSizeIPadPortrait,
+    kCCBCanvasSizeFixedLandscape,
+    kCCBCanvasSizeFixedPortrait,
     kCCBCanvasSizeAndroidXSmallLandscape,
     kCCBCanvasSizeAndroidXSmallPortrait,
     kCCBCanvasSizeAndroidSmallLandscape,
@@ -84,7 +87,6 @@ enum {
 
 @class CCBDocument;
 @class ProjectSettings;
-@class CCBHTTPServer;
 @class AssetsWindowController;
 @class PlugInManager;
 @class ResourceManager;
@@ -99,11 +101,9 @@ enum {
 @class SequencerHandler;
 @class SequencerScrubberSelectionView;
 @class MainWindow;
-@class PlayerConsoleWindow;
 @class HelpWindow;
 @class APIDocsWindow;
 @class MainToolbarDelegate;
-@class PlayerConnection;
 @class CCBSplitHorizontalView;
 @class AboutWindow;
 @class ResourceManagerPreviewView;
@@ -116,16 +116,16 @@ enum {
 @class PhysicsHandler;
 @class WarningOutlineHandler;
 
-@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, SMTabBarDelegate>
+@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, SMTabBarDelegate, BITCrashReportManagerDelegate>
 {
     
     // Panel Views
     IBOutlet NSView* leftPanel;
     IBOutlet NSView* rightPanel;
-    IBOutlet NSSegmentedControl *panelVisibilityControl;
+    IBOutlet NSSegmentedControl *__weak panelVisibilityControl;
     
     // Cocos2D view
-    IBOutlet CCBGLView* cocosView;
+    IBOutlet CCBGLView* __weak cocosView;
     IBOutlet NSView* mainView;
     IBOutlet CCBSplitHorizontalView* splitHorizontalView;
     
@@ -159,7 +159,7 @@ enum {
     IBOutlet NSTabView* projectTabView;
     
     IBOutlet SMTabBar* itemViewTabs;
-    IBOutlet NSTabView* itemTabView;
+    IBOutlet NSTabView* __weak itemTabView;
     
     // Outline view heirarchy
     SequencerHandler* sequenceHandler;
@@ -178,10 +178,10 @@ enum {
     IBOutlet NSMenu* menuCanvasSize;
     IBOutlet NSMenu* menuCanvasBorder;
     IBOutlet NSMenu* menuResolution;
-    IBOutlet NSMenu* menuContextKeyframe;
-    IBOutlet NSMenu* menuContextKeyframeInterpol;
-    IBOutlet NSMenu* menuContextResManager;
-    IBOutlet NSMenu *menuContextKeyframeNoselection;
+    IBOutlet NSMenu* __weak menuContextKeyframe;
+    IBOutlet NSMenu* __weak menuContextKeyframeInterpol;
+    IBOutlet NSMenu* __weak menuContextResManager;
+    IBOutlet NSMenu *__weak menuContextKeyframeNoselection;
     
     IBOutlet NSPopUpButton* menuTimelinePopup;
     IBOutlet NSMenu* menuTimeline;
@@ -203,7 +203,6 @@ enum {
     IBOutlet NSSegmentedControl* segmPublishBtn;
     
     // Resource manager
-    ResourceManager* resManager;
     IBOutlet NSView* previewViewContainer;
     NSView* previewViewImage;
     NSView* previewViewGeneric;
@@ -224,7 +223,7 @@ enum {
     ProjectSettings* projectSettings;
     
     // Project display
-    IBOutlet NSOutlineView* outlineProject;
+    IBOutlet NSOutlineView* __weak outlineProject;
     ResourceManagerOutlineHandler* projectOutlineHandler;
     
     // Project Warnings.
@@ -235,9 +234,6 @@ enum {
     NSMutableArray* delayOpenFiles;
     CCBDocument* currentDocument;
     BOOL hasOpenedDocument;
-    
-    // PlugIns (nodes)
-    PlugInManager* plugInManager;
     
     // Guides
     BOOL showGuides;
@@ -256,10 +252,6 @@ enum {
     // Modal status window
     TaskStatusWindow* modalTaskStatusWindow;
     
-    // Player
-    PlayerConnection* connection;
-    PlayerConsoleWindow* playerConsoleWindow;
-    
     // Help window
     HelpWindow* helpWindow;
     APIDocsWindow* apiDocsWindow;
@@ -275,37 +267,37 @@ enum {
     BOOL jsControlled;
     
     // Localization editor
-    IBOutlet LocalizationEditorHandler* localizationEditorHandler;
+    IBOutlet LocalizationEditorHandler* __weak localizationEditorHandler;
     
     // Physics editor
-    IBOutlet PhysicsHandler* physicsHandler;
+    IBOutlet PhysicsHandler* __weak physicsHandler;
     
 @private
-    MainWindow *window;
+    MainWindow *__weak window;
+	BOOL _applicationLaunchComplete;
     
 }
 
-@property (assign) IBOutlet MainWindow *window;
+@property (weak) IBOutlet MainWindow *window;
 
-@property (nonatomic,readonly) IBOutlet NSOutlineView* outlineProject;
+@property (weak, nonatomic,readonly) IBOutlet NSOutlineView* outlineProject;
 
 
-@property (nonatomic,readonly) ResourceManager* resManager;
 @property (nonatomic,readonly) ResourceManagerOutlineHandler* projectOutlineHandler;
-@property (nonatomic,retain) CCBDocument* currentDocument;
+@property (nonatomic,strong) CCBDocument* currentDocument;
 @property (nonatomic,assign) BOOL hasOpenedDocument;
-@property (nonatomic,readonly) CCBGLView* cocosView;
+@property (weak, nonatomic,readonly) CCBGLView* cocosView;
 
-@property (nonatomic,retain) IBOutlet PropertyInspectorHandler* propertyInspectorHandler;
+@property (nonatomic,strong) IBOutlet PropertyInspectorHandler* propertyInspectorHandler;
 
 @property (nonatomic,assign) BOOL canEditContentSize;
 @property (nonatomic,assign) BOOL defaultCanvasSize;
 @property (nonatomic,assign) BOOL canEditCustomClass;
 @property (nonatomic,assign) BOOL canEditStageSize;
 
-@property (nonatomic,readonly) CCNode* selectedNode;
+@property (weak, nonatomic,readonly) CCNode* selectedNode;
 
-@property (nonatomic,retain) NSArray* selectedNodes;
+@property (nonatomic,strong) NSArray* selectedNodes;
 @property (nonatomic,readonly) NSMutableArray* loadedSelectedNodes;
 
 @property (nonatomic,assign) BOOL showGuides;
@@ -315,14 +307,13 @@ enum {
 @property (nonatomic,readonly) CCBTransparentView* guiView;
 @property (nonatomic,readonly) CCBTransparentWindow* guiWindow;
 
-@property (nonatomic,readonly) IBOutlet NSMenu* menuContextKeyframe;
-@property (nonatomic,readonly) IBOutlet NSMenu* menuContextKeyframeInterpol;
-@property (nonatomic,readonly) IBOutlet NSMenu* menuContextResManager;
-@property (nonatomic,readonly) IBOutlet NSMenu *menuContextKeyframeNoselection;
-@property (nonatomic,readonly) NSSegmentedControl *panelVisibilityControl;
+@property (weak, nonatomic,readonly) IBOutlet NSMenu* menuContextKeyframe;
+@property (weak, nonatomic,readonly) IBOutlet NSMenu* menuContextKeyframeInterpol;
+@property (weak, nonatomic,readonly) IBOutlet NSMenu* menuContextResManager;
+@property (weak, nonatomic,readonly) IBOutlet NSMenu *menuContextKeyframeNoselection;
+@property (weak, nonatomic,readonly) NSSegmentedControl *panelVisibilityControl;
 
-@property (nonatomic,retain) ProjectSettings* projectSettings;
-@property (nonatomic,readonly) PlayerConnection* connection;
+@property (nonatomic,strong) ProjectSettings* projectSettings;
 
 @property (nonatomic,copy) NSString* errorDescription;
 
@@ -330,15 +321,14 @@ enum {
 - (void) resizeGUIWindow:(NSSize)size;
 
 // PlugIns and properties
-@property (nonatomic,readonly) PlugInManager* plugInManager;
 - (void) refreshProperty:(NSString*) name;
 - (void) refreshPropertiesOfType:(NSString*)type;
 
-@property (nonatomic,readonly) IBOutlet LocalizationEditorHandler* localizationEditorHandler;
+@property (weak, nonatomic,readonly) IBOutlet LocalizationEditorHandler* localizationEditorHandler;
 
 // Physics
-@property (nonatomic,readonly) PhysicsHandler* physicsHandler;
-@property (nonatomic,readonly) NSTabView* itemTabView;
+@property (weak, nonatomic,readonly) PhysicsHandler* physicsHandler;
+@property (weak, nonatomic,readonly) NSTabView* itemTabView;
 
 
 // Methods
@@ -349,9 +339,6 @@ enum {
 - (void) switchToDocument:(CCBDocument*) document;
 - (void) closeLastDocument;
 - (void) openFile:(NSString*) fileName;
-- (void) openJSFile:(NSString*) fileName;
-- (void) openJSFile:(NSString*) fileName highlightLine:(int)line;
-- (void) resetJSFilesLineHighlight;
 
 // Menu options
 - (void) dropAddSpriteNamed:(NSString*)spriteFile inSpriteSheet:(NSString*)spriteSheetFile at:(CGPoint)pt parent:(CCNode*)parent;
@@ -415,9 +402,7 @@ enum {
 
 // Publishing & running
 - (void) publisher:(CCBPublisher*)publisher finishedWithWarnings:(CCBWarnings*)warnings;
-- (IBAction)runProject:(id)sender;
 - (IBAction) menuPublishProjectAndRun:(id)sender;
-- (IBAction) menuPublishProjectAndRunInBrowser:(id)sender;
 
 // For warning messages
 - (void) modalDialogTitle: (NSString*)title message:(NSString*)msg;

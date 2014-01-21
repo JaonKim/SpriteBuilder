@@ -35,9 +35,7 @@
 
 @implementation InspectorValue
 
-@synthesize displayName;
 @synthesize view;
-@synthesize extra;
 @synthesize readOnly;
 @synthesize affectsProperties;
 @synthesize inspectorValueBelow;
@@ -49,7 +47,7 @@
 {
     NSString* inspectorClassName = [NSString stringWithFormat:@"Inspector%@",t];
     
-    InspectorValue* inspector = [[[NSClassFromString(inspectorClassName) alloc] initWithSelection:s andPropertyName:pn andDisplayName:dn andExtra:e] autorelease];
+    InspectorValue* inspector = [[NSClassFromString(inspectorClassName) alloc] initWithSelection:s andPropertyName:pn andDisplayName:dn andExtra:e];
     inspector.propertyType = t;
     
     return inspector;
@@ -58,14 +56,12 @@
 - (id) initWithSelection:(CCNode*)s andPropertyName:(NSString*)pn andDisplayName:(NSString*) dn andExtra:(NSString*)e;
 {
     self = [super init];
-    if (!self) return NULL;
+    if (!self) return nil;
     
-    propertyName = [pn retain];
-    displayName = [dn retain];
-    selection = [s retain];
-    extra = [e retain];
-    
-    resourceManager = [AppDelegate appDelegate];
+    propertyName = pn;
+	_displayName = dn;
+    selection = s;
+    _extra = e;
     
     return self;
 }
@@ -207,18 +203,6 @@
     [self updateAffectedProperties];
 }
 
-- (void)dealloc
-{
-    self.propertyType = NULL;
-    self.affectsProperties = NULL;
-    self.textFieldOriginalValue = NULL;
-    [selection release];
-    [propertyName release];
-    [displayName release];
-    [inspectorValueBelow release];
-    
-    [super dealloc];
-}
 
 #pragma mark -
 #pragma mark Disclosure

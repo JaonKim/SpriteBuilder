@@ -26,9 +26,9 @@
 
 @interface InspectorCodeConnections : InspectorValue
 
-@property (nonatomic,assign) NSString* customClass;
-@property (nonatomic,assign) NSString* memberVarAssignmentName;
-@property (nonatomic,assign) int memberVarAssignmentType;
-@property (nonatomic,assign) NSString* jsController;
+@property (nonatomic) NSString* customClass;
+@property (nonatomic) NSString* memberVarAssignmentName;
+@property (nonatomic) int memberVarAssignmentType;
+@property (nonatomic) NSString* jsController;
 
 @end

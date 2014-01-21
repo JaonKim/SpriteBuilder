@@ -163,8 +163,8 @@
     NSIndexSet* selectedRows = [self selectedRowIndexes];
     NSUInteger row = [selectedRows firstIndex];
     
-    NSMutableArray * resourcesToDelete = [[[NSMutableArray alloc] init] autorelease];
-    NSMutableArray * foldersToDelete = [[[NSMutableArray alloc] init] autorelease];
+    NSMutableArray * resourcesToDelete = [[NSMutableArray alloc] init];
+    NSMutableArray * foldersToDelete = [[NSMutableArray alloc] init];
     
     while (row != NSNotFound)
     {
@@ -197,8 +197,7 @@
     
     [self deselectAll:NULL];
     
-    [[AppDelegate appDelegate].resManager reloadAllResources];
-
+    [[ResourceManager sharedManager] reloadAllResources];
 }
 
 - (void) keyDown:(NSEvent *)theEvent

@@ -87,8 +87,8 @@
     {
         // Layer
         self.canSetSize = YES;
-        self.width = 100;
-        self.height = 100;
+        self.width = 568;
+        self.height = 384;
     }
     else if (objectType == kCCBNewDocTypeSprite)
     {
@@ -106,6 +106,7 @@
     }
 }
 
+@dynamic availableResolutions;
 -(NSMutableArray*) availableResolutions
 {
     NSMutableArray* arr = [NSMutableArray array];
@@ -157,9 +158,8 @@
 
 - (void) dealloc
 {
-    self.documentName = NULL;
+	SBLogSelf();
     self.rootObjectType = NULL;
-    [super dealloc];
 }
 
 @end

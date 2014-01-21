@@ -55,12 +55,12 @@
     resManager = [ResourceManager sharedManager];
     [resManager addResourceObserver:self];
     
-    resourceList = [outlineView retain];
-    imagePreview = [p retain];
+    resourceList = outlineView;
+    imagePreview = p;
     //lblNoPreview = [lbl retain];
     resType = rt;
     
-    ImageAndTextCell* imageTextCell = [[[ImageAndTextCell alloc] init] autorelease];
+    ImageAndTextCell* imageTextCell = [[ImageAndTextCell alloc] init];
     [imageTextCell setEditable:YES];
     [[resourceList outlineTableColumn] setDataCell:imageTextCell];
     [[resourceList outlineTableColumn] setEditable:YES];
@@ -285,6 +285,10 @@
         {
             icon = [self smallIconForFileType:@"png"];
         }
+        else if (res.type == kCCBResTypeBMFont)
+        {
+            icon = [self smallIconForFileType:@"ttf"];
+        }
         else
         {
             if (res.type == kCCBResTypeDirectory)
@@ -499,7 +503,7 @@
     if (movedFile)
     {
         [resourceList deselectAll:NULL];
-        [[AppDelegate appDelegate].resManager reloadAllResources];
+        [[ResourceManager sharedManager] reloadAllResources];
     }
     
     return movedFile;
@@ -530,10 +534,6 @@
         {
             [[AppDelegate appDelegate] openFile: res.filePath];
         }
-        else if (res.type == kCCBResTypeJS || res.type == kCCBResTypeJSON)
-        {
-            [[AppDelegate appDelegate] openJSFile:res.filePath];
-        }
     }
     
 }
@@ -559,12 +559,5 @@
     [resourceList reloadData];
 }
 
-- (void) dealloc
-{
-    [resourceList release];
-    [imagePreview release];
-    [lblNoPreview release];
-    [super dealloc];
-}
 
 @end

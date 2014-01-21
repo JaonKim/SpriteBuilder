@@ -28,29 +28,23 @@
 
 @implementation SavePanelLimiter
 
-- (id) initWithPanel:(NSSavePanel*)savePanel resManager:(ResourceManager*)rm
+- (id) initWithPanel:(NSSavePanel*)savePanel
 {
     self = [super init];
     if (!self) return NULL;
     
-    resManager = [rm retain];
     [savePanel setDelegate:self];
     
     return self;
 }
 
-- (void) dealloc
-{
-    [resManager release];
-    [super dealloc];
-}
 
 
 - (BOOL)panel:(id)sender validateURL:(NSURL *)url error:(NSError **)outError
 {
     NSString *path = [url path];
     
-    NSArray* activeDirs = resManager.activeDirectories;
+    NSArray* activeDirs = [ResourceManager sharedManager].activeDirectories;
     BOOL inProjectPath = NO;
     for (RMDirectory* dir in activeDirs)
     {

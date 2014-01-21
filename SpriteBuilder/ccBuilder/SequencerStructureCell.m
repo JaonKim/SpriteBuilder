@@ -37,13 +37,13 @@
 {
     if (!imagesLoaded)
     {
-        imgRowBgChannel = [[NSImage imageNamed:@"seq-row-channel-bg.png"] retain];
+        imgRowBgChannel = [NSImage imageNamed:@"seq-row-channel-bg.png"];
         imagesLoaded = YES;
     }
     
     if (!node)
     {
-        NSRect rowRect = NSMakeRect(0, /*cellFrame.origin.x,*/ cellFrame.origin.y, cellFrame.size.width+16, cellFrame.size.height);
+        NSRect rowRect = NSMakeRect(0, /*cellFrame.origin.x,*/ cellFrame.origin.y + cellFrame.size.height - kCCBSeqDefaultRowHeight, cellFrame.size.width+16, kCCBSeqDefaultRowHeight);
         [imgRowBgChannel drawInRect:rowRect fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
         [super drawWithFrame:cellFrame inView:controlView];
         return;
@@ -63,7 +63,7 @@
         propNameRect.size.width -= 5; 
     
         // Right alignment
-        NSMutableParagraphStyle *style = [[[NSMutableParagraphStyle alloc] init] autorelease];
+        NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
         [style setAlignment:NSRightTextAlignment];
     
         // Setup attributes
@@ -142,11 +142,5 @@
     return YES;
 }
 
-- (void) dealloc
-{
-    //self.node = NULL;
-    [imgRowBgChannel release];
-    [super dealloc];
-}
 
 @end

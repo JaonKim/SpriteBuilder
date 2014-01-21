@@ -59,7 +59,7 @@ enum
     kCCBSizeTypeMultiplyResolution,
 };
 
-NSDictionary* renamedProperties = NULL;
+__strong NSDictionary* renamedProperties = nil;
 
 @implementation CCBReaderInternal
 
@@ -92,33 +92,14 @@ NSDictionary* renamedProperties = NULL;
     return [val boolValue];
 }
 
-+ (ccColor3B) deserializeColor3:(id) val
++ (CCColor*) deserializeColor4:(id) val
 {
-    ccColor3B c;
-    c.r = [[val objectAtIndex:0] intValue];
-    c.g = [[val objectAtIndex:1] intValue];
-    c.b = [[val objectAtIndex:2] intValue];
-    return c;
-}
-
-+ (ccColor4B) deserializeColor4:(id) val
-{
-    ccColor4B c;
-    c.r = [[val objectAtIndex:0] intValue];
-    c.g = [[val objectAtIndex:1] intValue];
-    c.b = [[val objectAtIndex:2] intValue];
-    c.a = [[val objectAtIndex:3] intValue];
-    return c;
-}
-
-+ (ccColor4F) deserializeColor4F:(id) val
-{
-    ccColor4F c;
-    c.r = [[val objectAtIndex:0] floatValue];
-    c.g = [[val objectAtIndex:1] floatValue];
-    c.b = [[val objectAtIndex:2] floatValue];
-    c.a = [[val objectAtIndex:3] floatValue];
-    return c;
+    CGFloat r,g,b,a;
+    r = [[val objectAtIndex:0] floatValue];
+    g = [[val objectAtIndex:1] floatValue];
+    b = [[val objectAtIndex:2] floatValue];
+    a = [[val objectAtIndex:3] floatValue];
+    return [CCColor colorWithRed:r green:g blue:b alpha:a];
 }
 
 + (ccBlendFunc) deserializeBlendFunc:(id) val
@@ -159,7 +140,7 @@ NSDictionary* renamedProperties = NULL;
             }
             else if (oldPosType == kCCBPositionTypeMultiplyResolution)
             {
-                posType = CCPositionTypeScaled;
+                posType = CCPositionTypeUIPoints;
             }
         }
         else if ([(NSArray*)serializedValue count] == 5)
@@ -183,35 +164,35 @@ NSDictionary* renamedProperties = NULL;
         float w = [[serializedValue objectAtIndex:0] floatValue];
         float h = [[serializedValue objectAtIndex:1] floatValue];
         
-        CCContentSizeType sizeType = CCContentSizeTypePoints;
+        CCSizeType sizeType = CCSizeTypePoints;
         if ([(NSArray*)serializedValue count] == 3)
         {
             // Convert old content size type
             int oldSizeType = [[serializedValue objectAtIndex:2] intValue];
             if (oldSizeType == kCCBSizeTypePercent)
             {
-                sizeType = CCContentSizeTypeNormalized;
+                sizeType = CCSizeTypeNormalized;
                 w /= 100.0f;
                 h /= 100.0f;
             }
             else if (oldSizeType == kCCBSizeTypeRelativeContainer)
             {
-                sizeType.widthUnit = CCContentSizeUnitInsetPoints;
-                sizeType.heightUnit = CCContentSizeUnitInsetPoints;
+                sizeType.widthUnit = CCSizeUnitInsetPoints;
+                sizeType.heightUnit = CCSizeUnitInsetPoints;
             }
             else if (oldSizeType == kCCBSizeTypeHorizontalPercent)
             {
-                sizeType.widthUnit = CCContentSizeUnitNormalized;
+                sizeType.widthUnit = CCSizeUnitNormalized;
                 w /= 100.0f;
             }
             else if (oldSizeType == kCCBSzieTypeVerticalPercent)
             {
-                sizeType.heightUnit = CCContentSizeUnitNormalized;
+                sizeType.heightUnit = CCSizeUnitNormalized;
                 h /= 100.0f;
             }
             else if (oldSizeType == kCCBSizeTypeMultiplyResolution)
             {
-                sizeType = CCContentSizeTypeScaled;
+                sizeType = CCSizeTypeUIPoints;
             }
         }
         else if ([(NSArray*)serializedValue count] == 4)
@@ -311,24 +292,16 @@ NSDictionary* renamedProperties = NULL;
         [TexturePropertySetter setTextureForNode:node andProperty:name withFile:spriteFile];
         [extraProps setObject:spriteFile forKey:name];
     }
-    else if ([type isEqualToString:@"Color3"])
+    else if ([type isEqualToString:@"Color4"] ||
+             [type isEqualToString:@"Color3"])
     {
-        ccColor3B c = [CCBReaderInternal deserializeColor3:serializedValue];
-        NSValue* colorValue = [NSValue value:&c withObjCType:@encode(ccColor3B)];
-        [node setValue:colorValue forKey:name];
-    }
-    else if ([type isEqualToString:@"Color4"])
-    {
-        ccColor4B c = [CCBReaderInternal deserializeColor4:serializedValue];
-        NSValue* colorValue = [NSValue value:&c withObjCType:@encode(ccColor4B)];
+        CCColor* colorValue = [CCBReaderInternal deserializeColor4:serializedValue];
         [node setValue:colorValue forKey:name];
     }
     else if ([type isEqualToString:@"Color4FVar"])
     {
-        ccColor4F c = [CCBReaderInternal deserializeColor4F:[serializedValue objectAtIndex:0]];
-        ccColor4F cVar = [CCBReaderInternal deserializeColor4F:[serializedValue objectAtIndex:1]];
-        NSValue* cValue = [NSValue value:&c withObjCType:@encode(ccColor4F)];
-        NSValue* cVarValue = [NSValue value:&cVar withObjCType:@encode(ccColor4F)];
+        CCColor* cValue = [CCBReaderInternal deserializeColor4:[serializedValue objectAtIndex:0]];
+        CCColor* cVarValue = [CCBReaderInternal deserializeColor4:[serializedValue objectAtIndex:1]];
         [node setValue:cValue forKey:name];
         [node setValue:cVarValue forKey:[NSString stringWithFormat:@"%@Var",name]];
     }
@@ -343,7 +316,12 @@ NSDictionary* renamedProperties = NULL;
         NSString* fntFile = serializedValue;
         if (!fntFile) fntFile = @"";
         [TexturePropertySetter setFontForNode:node andProperty:name withFile:fntFile];
-        [extraProps setObject:fntFile forKey:name];
+    }
+    else if ([type isEqualToString:@"StringSimple"])
+    {
+        NSString* str = serializedValue;
+        if (!str) str = @"";
+        [node setValue:str forKey:name];
     }
     else if ([type isEqualToString:@"Text"]
              || [type isEqualToString:@"String"])
@@ -412,7 +390,6 @@ NSDictionary* renamedProperties = NULL;
         renamedProperties = [NSDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"CCBReaderInternalRenamedProps" ofType:@"plist"]];
         
         NSAssert(renamedProperties, @"Failed to load renamed properties dict");
-        [renamedProperties retain];
     }
     
     NSArray* props = [dict objectForKey:@"properties"];
@@ -517,7 +494,7 @@ NSDictionary* renamedProperties = NULL;
     // Physics
     if ([dict objectForKey:@"physicsBody"])
     {
-        node.nodePhysicsBody = [[[NodePhysicsBody alloc] initWithSerialization:[dict objectForKey:@"physicsBody"]] autorelease];
+        node.nodePhysicsBody = [[NodePhysicsBody alloc] initWithSerialization:[dict objectForKey:@"physicsBody"]];
     }
     
     // Selections

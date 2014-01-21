@@ -47,6 +47,7 @@
 #import "SequencerSoundChannel.h"
 #import <objc/runtime.h>
 #import "NSPasteboard+CCB.h"
+#import "MainWindow.h"
 
 static SequencerHandler* sharedSequencerHandler;
 
@@ -61,6 +62,7 @@ static SequencerHandler* sharedSequencerHandler;
 @synthesize scroller;
 @synthesize scrollView;
 @synthesize contextKeyframe;
+@synthesize loopPlayback;
 
 #pragma mark Init and singleton object
 
@@ -96,8 +98,7 @@ static SequencerHandler* sharedSequencerHandler;
 {
     if (tss != timeScaleSlider)
     {
-        [timeScaleSlider release];
-        timeScaleSlider = [tss retain];
+        timeScaleSlider = tss;
         
         [timeScaleSlider setTarget:self];
         [timeScaleSlider setAction:@selector(timeScaleSliderUpdated:)];
@@ -182,8 +183,7 @@ static SequencerHandler* sharedSequencerHandler;
 {
     if (s != scroller)
     {
-        [scroller release];
-        scroller = [s retain];
+        scroller = s;
         
         [scroller setTarget:self];
         [scroller setAction:@selector(scrollerUpdated:)];
@@ -414,6 +414,10 @@ static SequencerHandler* sharedSequencerHandler;
     else if([tableColumn.identifier isEqualToString:@"locked"])
     {
         node.locked = [(NSNumber*)object boolValue];
+        if([AppDelegate appDelegate].selectedNode == node)
+        {
+            [[AppDelegate appDelegate] updateInspectorFromSelection];
+        }
     }
     else if (![object isEqualToString:node.displayName])
     {
@@ -478,7 +482,8 @@ static SequencerHandler* sharedSequencerHandler;
         if (nodeData)
         {
             NSDictionary* clipDict = [NSKeyedUnarchiver unarchiveObjectWithData:nodeData];
-            CCNode* draggedNode = (CCNode*)[[clipDict objectForKey:@"srcNode"] longLongValue];
+			void* draggedNodePtr = (void*)[[clipDict objectForKey:@"srcNode"] longLongValue];
+            CCNode* draggedNode = (__bridge CCNode*)draggedNodePtr;
             
             CCNode* node = item;
             CCNode* parent = [node parent];
@@ -540,7 +545,8 @@ static SequencerHandler* sharedSequencerHandler;
         if (![appDelegate addCCObject:clipNode toParent:item atIndex:index]) return NO;
         
         // Remove old node
-        CCNode* draggedNode = (CCNode*)[[clipDict objectForKey:@"srcNode"] longLongValue];
+		void* draggedNodePtr = (void*)[[clipDict objectForKey:@"srcNode"] longLongValue];
+		CCNode* draggedNode = (__bridge CCNode*)draggedNodePtr;
         [appDelegate deleteNode:draggedNode];
         
         [appDelegate setSelectedNodes:[NSArray arrayWithObject: clipNode]];
@@ -961,8 +967,7 @@ static SequencerHandler* sharedSequencerHandler;
 {
     if (seq != currentSequence)
     {
-        [currentSequence release];
-        currentSequence = [seq retain];
+        currentSequence = seq;
         
         [outlineHierarchy reloadData];
         [[AppDelegate appDelegate] updateTimelineMenu];
@@ -1046,11 +1051,8 @@ static SequencerHandler* sharedSequencerHandler;
 - (void) dealloc
 {
     self.currentSequence = NULL;
-    self.scrubberSelectionView = NULL;
-    self.timeDisplay = NULL;
     //self.sequences = NULL;
     
-    [super dealloc];
 }
 
 @end

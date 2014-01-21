@@ -102,25 +102,27 @@
 {
     if (!imagesLoaded)
     {
-        imgRowBgChannel = [[NSImage imageNamed:@"seq-row-channel-bg.png"] retain];
+        imgRowBgChannel = [NSImage imageNamed:@"seq-row-channel-bg.png"];
         imagesLoaded = YES;
     }
     
     if (!node )
     {
-        NSRect rowRect = NSMakeRect(cellFrame.origin.x, cellFrame.origin.y, cellFrame.size.width, cellFrame.size.height);
+        NSRect rowRect = NSMakeRect(cellFrame.origin.x, cellFrame.origin.y + cellFrame.size.height - kCCBSeqDefaultRowHeight, cellFrame.size.width, kCCBSeqDefaultRowHeight);
         [imgRowBgChannel drawInRect:rowRect fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
     }
     
     if (canExpand)
     {
+        int smallOffset = node ? 0 : 1; //A small offset for sound rows.
+        
         if (isExpanded)
         {
-            [collapsedImage drawAtPoint:cellFrame.origin fromRect:NSMakeRect(0, 0, 16, 16) operation:NSCompositeSourceOver fraction:1];
+            [collapsedImage drawAtPoint:cellFrame.origin fromRect:NSMakeRect(0, 0 + smallOffset, 16, 16) operation:NSCompositeSourceOver fraction:1];
         }
         else
         {
-            [expandedImage drawAtPoint:cellFrame.origin fromRect:NSMakeRect(0, 0, 16, 16) operation:NSCompositeSourceOver fraction:1];
+            [expandedImage drawAtPoint:cellFrame.origin fromRect:NSMakeRect(0, 0 + smallOffset, 16, 16) operation:NSCompositeSourceOver fraction:1];
         }
     }
 }
@@ -132,17 +134,11 @@
     copy->expandedImage = nil;
     copy.collapsedImage = [self.collapsedImage copyWithZone:zone];
     copy.expandedImage = [self.expandedImage copyWithZone:zone];
-    [copy.collapsedImage release];
-    [copy.expandedImage release];
+    copy.collapsedImage;
+    copy.expandedImage;
     
     return copy;
 }
 
-- (void) dealloc
-{
-    [expandedImage release];
-    [collapsedImage release];
-    [super dealloc];
-}
 
 @end

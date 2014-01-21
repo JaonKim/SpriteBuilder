@@ -11,6 +11,30 @@
 
 NSString * kSoundFileImageLoaded = @"kSoundFileImageLoaded";
 
+@implementation WaveformImageCell
+
+@synthesize fileName;
+
+-(void)drawWithFrame:(NSRect)cellFrame inView:(NSView *)controlView
+{
+    
+    [super drawWithFrame:cellFrame inView:controlView];
+    
+    CGRect interiorRect = cellFrame;
+    interiorRect.origin.x += 3;
+    interiorRect.origin.y += 3;
+    interiorRect.size.height -= 6;
+    interiorRect.size.width  -= 6;
+    
+    
+    [[SoundFileImageController sharedInstance] drawFrame:self.fileName withFrame:interiorRect];
+
+
+}
+
+@end
+
+
 @implementation SoundFileImageController
 
 -(id)init
@@ -18,7 +42,7 @@ NSString * kSoundFileImageLoaded = @"kSoundFileImageLoaded";
     self = [super init];
     if(self)
     {
-        soundFileImages = [[[NSMutableDictionary alloc] init] retain];
+        soundFileImages = [[NSMutableDictionary alloc] init];
         soundFileImages[@"_default_"] =[[NSMutableDictionary alloc] init];
 
     }
@@ -40,8 +64,8 @@ NSString * kSoundFileImageLoaded = @"kSoundFileImageLoaded";
 
 struct MaxMin
 {
-    SInt16 max;
-    SInt16 min;
+    SInt32 max;
+    SInt32 min;
 };
 typedef struct MaxMin MaxMin;
 
@@ -75,20 +99,19 @@ typedef struct MaxMin MaxMin;
     AVAssetReaderTrackOutput* output = [[AVAssetReaderTrackOutput alloc] initWithTrack:songTrack outputSettings:outputSettingsDict];
     
     [reader addOutput:output];
-    [output release];
     
-    UInt32 sampleRate,channelCount;
+    UInt32 sampleRate, channelCount;
     
     NSArray* formatDesc = songTrack.formatDescriptions;
     for(unsigned int i = 0; i < [formatDesc count]; ++i) {
-        CMAudioFormatDescriptionRef item = (CMAudioFormatDescriptionRef)[formatDesc objectAtIndex:i];
+        CMAudioFormatDescriptionRef item = (__bridge CMAudioFormatDescriptionRef)[formatDesc objectAtIndex:i];
         const AudioStreamBasicDescription* fmtDesc = CMAudioFormatDescriptionGetStreamBasicDescription (item);
         if(fmtDesc ) {
             
             sampleRate = fmtDesc->mSampleRate;
             channelCount = fmtDesc->mChannelsPerFrame;
             
-            //    NSLog(@"channels:%u, bytes/packet: %u, sampleRate %f",fmtDesc->mChannelsPerFrame, fmtDesc->mBytesPerPacket,fmtDesc->mSampleRate);
+            // NSLog(@"channels:%u, bytes/packet: %u, sampleRate %f",fmtDesc->mChannelsPerFrame, fmtDesc->mBytesPerPacket,fmtDesc->mSampleRate);
         }
     }
     
@@ -101,8 +124,7 @@ typedef struct MaxMin MaxMin;
     
     
     
-    struct MaxMin maxLeft = {0,0};
-    struct MaxMin maxRight = {0,0};
+    struct MaxMin maxSample = {-99999,99999};
     
     
     NSInteger sampleTally = 0;
@@ -122,79 +144,63 @@ typedef struct MaxMin MaxMin;
             
             size_t length = CMBlockBufferGetDataLength(blockBufferRef);
 
-            NSAutoreleasePool *wader = [[NSAutoreleasePool alloc] init];
+            @autoreleasepool {
             
-            NSMutableData * data = [NSMutableData dataWithLength:length];
-            CMBlockBufferCopyDataBytes(blockBufferRef, 0, length, data.mutableBytes);
-            
-            SInt16 * samples = (SInt16 *) data.mutableBytes;
-            int sampleCount = (UInt32)length / bytesPerSample;
-            
-            for (int i = 0; i < sampleCount ; i ++) {
-                sampleTotal++;
-                SInt16 left = *samples++;
+                NSMutableData * data = [NSMutableData dataWithLength:length];
+                CMBlockBufferCopyDataBytes(blockBufferRef, 0, length, data.mutableBytes);
+                
+                SInt16 * samples = (SInt16 *) data.mutableBytes;
+                int sampleCount = (UInt32)length / bytesPerSample;
+                
+                for (int i = 0; i < sampleCount ; i ++) {
+                    sampleTotal++;
+                    SInt16 left = *samples++;
 
-                
-                if(left  > maxLeft.max)
-                    maxLeft.max = left;
-                
-                if(left  < maxLeft.min)
-                    maxLeft.min = left;
-                
-                
-                SInt16 right;
-                if (channelCount==2) {
-                    right = *samples++;
-                    if(right  > maxRight.max)
-                        maxRight.max = right;
                     
-                    if(right  < maxRight.min)
-                        maxRight.min = right;
-                }
-                
-                sampleTally++;
-                
-                if (sampleTally > samplesPerPixel  ) {
+                    if(left  > maxSample.max)
+                        maxSample.max = left;
+                    
+                    if(left  < maxSample.min)
+                        maxSample.min = left;
                     
                     
-                    if (abs(maxLeft.max) > normalizeMax) {
-                        normalizeMax = abs(maxLeft.max);
-                    }
-                    
-                    if (abs(maxLeft.min) > normalizeMax) {
-                        normalizeMax = abs(maxLeft.min);
-                    }
-                    
-                    
-                    [fullSongData appendBytes:&maxLeft.max length:sizeof(maxLeft.max)];
-                    [fullSongData appendBytes:&maxLeft.min length:sizeof(maxLeft.min)];
-                    
+                    SInt16 right;
                     if (channelCount==2) {
+                        right = *samples++;
+                        if(right  > maxSample.max)
+                            maxSample.max = right;
                         
-                        if (abs(maxRight.max) > normalizeMax) {
-                            normalizeMax = abs(maxRight.max);
-                        }
-                        
-                        if (abs(maxRight.min) > normalizeMax) {
-                            normalizeMax = abs(maxRight.min);
-                        }
-                        
-                        [fullSongData appendBytes:&maxRight.max length:sizeof(maxRight.max)];
-                        [fullSongData appendBytes:&maxRight.min length:sizeof(maxRight.min)];
+                        if(right  < maxSample.min)
+                            maxSample.min = right;
                     }
                     
-                    maxLeft.max = 0;
-                    maxLeft.min = 0;
-
-                    maxRight.max = 0;
-                    maxRight.min = 0;
-
-                    sampleTally = 0;
+                    sampleTally++;
                     
+                    if (sampleTally > samplesPerPixel  ) {
+                        
+                        
+                        if (abs(maxSample.max) > normalizeMax) {
+                            normalizeMax = abs(maxSample.max);
+                        }
+                        
+                        if (abs(maxSample.min) > normalizeMax) {
+                            normalizeMax = abs(maxSample.min);
+                        }
+                        
+                        
+                        [fullSongData appendBytes:&maxSample.max length:sizeof(maxSample.max)];
+                        [fullSongData appendBytes:&maxSample.min length:sizeof(maxSample.min)];
+                        
+                        
+                        maxSample.max = 0;
+                        maxSample.min = 0;
+
+                        sampleTally = 0;
+                        
+                    }
                 }
-            }
             
-            [wader drain];
+            }
             
             CMSampleBufferInvalidate(sampleBufferRef);
             
@@ -212,30 +218,26 @@ typedef struct MaxMin MaxMin;
     
     if (reader.status == AVAssetReaderStatusCompleted){
         
-        waveformImage = [self audioImageGraph:(SInt16 *)fullSongData.bytes
+        waveformImage = [self audioImageGraph:(SInt32 *)fullSongData.bytes
                                  normalizeMax:normalizeMax
-                                  sampleCount:fullSongData.length / (4 * channelCount)
-                                 channelCount:channelCount
+                                  sampleCount:fullSongData.length / sizeof(MaxMin)
                                   imageHeight:size.height];
     }
     
-    [fullSongData release];
-    [reader release];
     
     return waveformImage;
 }
 
 
--(NSImage *) audioImageGraph:(SInt16 *) samples
+-(NSImage *) audioImageGraph:(SInt32 *) samples
                 normalizeMax:(SInt16) normalizeMax
                  sampleCount:(NSInteger) sampleCount
-                channelCount:(NSInteger) channelCount
                  imageHeight:(float) imageHeight {
     
     CGSize imageSize = CGSizeMake(sampleCount, imageHeight);
     
     
-    NSBitmapImageRep *offscreenRep = [[[NSBitmapImageRep alloc]
+    NSBitmapImageRep *offscreenRep = [[NSBitmapImageRep alloc]
                                        initWithBitmapDataPlanes:NULL
                                        pixelsWide:sampleCount
                                        pixelsHigh:imageHeight
@@ -246,7 +248,7 @@ typedef struct MaxMin MaxMin;
                                        colorSpaceName:NSDeviceRGBColorSpace
                                        bitmapFormat:NSAlphaFirstBitmapFormat
                                        bytesPerRow:0
-                                       bitsPerPixel:0] autorelease];
+                                       bitsPerPixel:0];
     
     NSGraphicsContext * graphicsContext = [NSGraphicsContext graphicsContextWithBitmapImageRep:offscreenRep];
     
@@ -257,57 +259,67 @@ typedef struct MaxMin MaxMin;
     rect.origin.x = 0;
     rect.origin.y = 0;
     
-    CGContextClearRect(context, rect);
-    
-    //CGContextSetFillColorWithColor(context, [NSColor blackColor].CGColor);
-    CGContextSetAlpha(context,1.0);
 
     
-    CGColorRef leftcolor = [[NSColor blueColor] CGColor];
-    CGColorRef rightcolor = [[NSColor blueColor] CGColor];
-    
-    //CGContextFillRect(context, rect);
-    
-    CGContextSetLineWidth(context, 1.0);
-    
-    float halfGraphHeight = (imageHeight / 2) / (float) channelCount ;
+    float halfGraphHeight = (imageHeight / 2) ;
     float centerLeft = halfGraphHeight;
-    float centerRight = (halfGraphHeight*3) ;
-    float sampleAdjustmentFactor = (imageHeight/ (float) channelCount) / (float) normalizeMax / 2.0f;
+    float sampleAdjustmentFactor = (imageHeight) / (float) normalizeMax / 2.0f;
     
+    SInt32 * samplePtr = samples;
+    
+    CGPoint * points = malloc(sizeof(CGPoint) * sampleCount * 2);
+    
+    CGPoint * current = points;
     for (NSInteger intSample = 0 ; intSample < sampleCount ; intSample ++ ) {
-        SInt16 leftMax = *samples++;
-        SInt16 leftMin = *samples++;
+        SInt32 leftMax = *samplePtr++;
+        samplePtr++;
         
         float pixelsMax = (float) leftMax * sampleAdjustmentFactor;
-        float pixelsMin = (float) leftMin * sampleAdjustmentFactor;
-        
 
-        CGContextMoveToPoint(context, intSample, centerLeft + pixelsMax);
-        CGContextAddLineToPoint(context, intSample, centerLeft+ pixelsMin);
+        current->x = intSample;
+        current->y = centerLeft+ pixelsMax;
+        current++;
         
-        CGContextSetStrokeColorWithColor(context, leftcolor);
-        CGContextStrokePath(context);
-        
-        if (channelCount==2)
-        {
-            SInt16 rightMax = *samples++;
-            SInt16 rightMin = *samples++;
-            
-            float pixelsMax = (float) rightMax * sampleAdjustmentFactor;
-            float pixelsMin = (float) rightMin * sampleAdjustmentFactor;
-            
-            CGContextMoveToPoint(context, intSample, centerRight + pixelsMax);
-            CGContextAddLineToPoint(context, intSample, centerRight+ pixelsMin);
-            
-            CGContextSetStrokeColorWithColor(context, rightcolor);
-            CGContextStrokePath(context);
-        }
     }
+    
+    samplePtr = samples + sampleCount * 2;
+    for (NSInteger intSample = sampleCount -1; intSample >= 0 ; intSample-- )
+    {
+        SInt32 leftMin = *--samplePtr;
+        samplePtr--;
+        
+        float pixelsMin = (float)leftMin * sampleAdjustmentFactor;
+        
+        current->x = intSample;
+        current->y = centerLeft+ pixelsMin;
+        current++;
+        
+    }
+    
+    CGContextClearRect(context, rect);
+    
+    CGContextSetAlpha(context,1.0);
+    CGContextSetFillColorWithColor(context, [NSColor blueColor].CGColor);
+    CGContextSetLineWidth(context, 1.0);
+    
+    CGMutablePathRef mutablePath = CGPathCreateMutable();
+    CGPathAddLines(mutablePath, nil, points, sampleCount * 2);
+    
+    CGPathCloseSubpath(mutablePath);
+
+    CGContextBeginPath(context);
+    CGContextAddPath(context, mutablePath);
+    CGContextClosePath( context ); //ensure path is closed, not necessary if you know it is
+    CGPathDrawingMode mode = kCGPathFill;
+    CGContextDrawPath( context, mode );
+    
+    CFRelease(mutablePath);
+    free(points);
+   
     
     [NSGraphicsContext restoreGraphicsState];
     
-    NSImage *img = [[[NSImage alloc] initWithSize:imageSize] autorelease];
+    NSImage *img = [[NSImage alloc] initWithSize:imageSize];
     [img addRepresentation:offscreenRep];
     
     return img;
@@ -363,7 +375,7 @@ static const int kMaxImageHeight = 256;
 -(NSImage*)generateDefaultImage:(CGSize)size
 {
     
-    NSImage *image = [[[NSImage alloc] initWithSize:size] autorelease];
+    NSImage *image = [[NSImage alloc] initWithSize:size];
     NSColor * color = [NSColor grayColor];
     [image lockFocusFlipped:YES];
     

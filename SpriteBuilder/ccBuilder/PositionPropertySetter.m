@@ -301,7 +301,7 @@
     [node setValue:typeValue forKey:[prop stringByAppendingString:@"Type"]];
     
     // Calculate new position (from old value)
-    CGPoint relPos = [node convertPositionFromPoints:absPos type:node.positionType];
+    CGPoint relPos = [node convertPositionFromPoints:absPos type:type];
     
     // Update the position
     NSValue* pointValue = [NSValue valueWithPoint: NSPointFromCGPoint(relPos)];
@@ -348,17 +348,17 @@
     return newPos;
 }
 
-+ (void) setSize:(NSSize)size type:(CCContentSizeType)type forNode:(CCNode*)node prop:(NSString*)prop
++ (void) setSize:(NSSize)size type:(CCSizeType)type forNode:(CCNode*)node prop:(NSString*)prop
 {
     // Set type
-    NSValue* typeValue = [NSValue value:&type withObjCType:@encode(CCContentSizeType)];
+    NSValue* typeValue = [NSValue value:&type withObjCType:@encode(CCSizeType)];
     [node setValue:typeValue forKey:[prop stringByAppendingString:@"Type"]];
     
     // Set size
     [node setValue:[NSValue valueWithSize:size] forKey:prop];
 }
 
-+ (void) setSizeType:(CCContentSizeType)type forNode:(CCNode*)node prop:(NSString*)prop
++ (void) setSizeType:(CCSizeType)type forNode:(CCNode*)node prop:(NSString*)prop
 {
     // Figure out which properties to update
     PlugInNode* plugIn = node.plugIn;
@@ -404,7 +404,7 @@
     }
     
     // Change the type
-    NSValue* typeValue = [NSValue value:&type withObjCType:@encode(CCContentSizeType)];
+    NSValue* typeValue = [NSValue value:&type withObjCType:@encode(CCSizeType)];
     [node setValue:typeValue forKey:[prop stringByAppendingString:@"Type"]];
     
     int i = 0;
@@ -429,10 +429,10 @@
     return [[node valueForKey:prop] sizeValue];
 }
 
-+ (CCContentSizeType) sizeTypeForNode:(CCNode*)node prop:(NSString*)prop
++ (CCSizeType) sizeTypeForNode:(CCNode*)node prop:(NSString*)prop
 {
     NSValue* sizeValue = [node valueForKey:[prop stringByAppendingString:@"Type"]];
-    CCContentSizeType type;
+    CCSizeType type;
     [sizeValue getValue:&type];
     
     return type;
@@ -464,8 +464,8 @@
     }
     else if (type == kCCBScaleTypeMultiplyResolution)
     {
-        absScaleX = scaleX * resolution.scale;
-        absScaleY = scaleY * resolution.scale;
+        absScaleX = scaleX / resolution.scale;
+        absScaleY = scaleY / resolution.scale;
     }
     
     [node setValue:[NSNumber numberWithFloat:absScaleX] forKey:[prop stringByAppendingString:@"X"]];
@@ -479,14 +479,24 @@
 + (float) scaleXForNode:(CCNode*)node prop:(NSString*)prop
 {
     NSNumber* scale = [node extraPropForKey:[prop stringByAppendingString:@"X"]];
-    if (!scale) return 1;
+    if(!scale)
+        scale = [node valueForKey:[prop stringByAppendingString:@"X"]];
+        
+    if (!scale)
+        return 1;
+    
     return [scale floatValue];
 }
 
 + (float) scaleYForNode:(CCNode*)node prop:(NSString*)prop
 {
     NSNumber* scale = [node extraPropForKey:[prop stringByAppendingString:@"Y"]];
-    if (!scale) return 1;
+    
+    if(!scale)
+        scale = [node valueForKey:[prop stringByAppendingString:@"Y"]];
+
+    if (!scale)
+        return 1;
     return [scale floatValue];
 }
 
@@ -504,7 +514,7 @@
     float absF = f;
     if (type == kCCBScaleTypeMultiplyResolution)
     {
-        absF = f * resolution.scale;
+        absF = f / resolution.scale;
     }
     
     [node setValue:[NSNumber numberWithFloat:absF ] forKey:prop];

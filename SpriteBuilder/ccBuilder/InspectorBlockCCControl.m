@@ -67,12 +67,7 @@
     */
 }
 
-- (void) dealloc
-{
-    [btns release];
-    [super dealloc];
-}
-
+@dynamic selector;
 - (void) setSelector:(NSString *)selector
 {
     if (!selector) selector = @"";

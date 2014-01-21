@@ -31,7 +31,6 @@
     int width;
     int height;
     NSString* ext;
-    float scale;
     BOOL centeredOrigin;
     NSArray* exts;
 }
@@ -44,6 +43,11 @@
 @property (nonatomic,assign) float scale;
 @property (nonatomic,assign) BOOL centeredOrigin;
 @property (nonatomic,readonly) NSArray* exts;
+
+// Fixed resolutions
++ (ResolutionSetting*) settingFixed;
++ (ResolutionSetting*) settingFixedLandscape;
++ (ResolutionSetting*) settingFixedPortrait;
 
 // iOS resolutions
 + (ResolutionSetting*) settingIPhone;

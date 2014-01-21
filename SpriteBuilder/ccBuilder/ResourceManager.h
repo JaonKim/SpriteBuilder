@@ -50,8 +50,8 @@ enum
     NSString* spriteSheetFile;
     NSString* spriteFrameName;
 }
-@property (nonatomic,retain) NSString* spriteSheetFile;
-@property (nonatomic,retain) NSString* spriteFrameName;
+@property (nonatomic,strong) NSString* spriteSheetFile;
+@property (nonatomic,strong) NSString* spriteFrameName;
 @end
 
 
@@ -60,8 +60,8 @@ enum
     NSString* animationFile;
     NSString* animationName;
 }
-@property (nonatomic,retain) NSString* animationFile;
-@property (nonatomic,retain) NSString* animationName;
+@property (nonatomic,strong) NSString* animationFile;
+@property (nonatomic,strong) NSString* animationName;
 @end
 
 
@@ -74,12 +74,12 @@ enum
     id data;
 }
 
-@property (nonatomic,retain) NSString* filePath;
+@property (nonatomic,strong) NSString* filePath;
 @property (nonatomic,readonly) NSString* relativePath;
-@property (nonatomic,retain) NSDate* modifiedTime;
+@property (nonatomic,strong) NSDate* modifiedTime;
 @property (nonatomic,assign) int type;
 @property (nonatomic,assign) BOOL touched;
-@property (nonatomic,retain) id data;
+@property (nonatomic,strong) id data;
 - (void) loadData;
 - (NSImage*) previewForResolution:(NSString*) res;
 
@@ -103,7 +103,7 @@ enum
 }
 
 @property (nonatomic,assign) int count;
-@property (nonatomic,retain) NSString* dirPath;
+@property (nonatomic,strong) NSString* dirPath;
 @property (nonatomic,readonly) NSMutableDictionary* resources;
 @property (nonatomic,readonly) BOOL isDynamicSpriteSheet;
 
@@ -139,7 +139,7 @@ enum
 + (ResourceManager*) sharedManager;
 
 @property (nonatomic,readonly) NSMutableDictionary* directories;
-@property (nonatomic,retain) NSArray* activeDirectories;
+@property (nonatomic,strong) NSArray* activeDirectories;
 @property (nonatomic,readonly) NSString* mainActiveDirectoryPath;
 @property (nonatomic,assign) BOOL tooManyDirectoriesAdded;
 

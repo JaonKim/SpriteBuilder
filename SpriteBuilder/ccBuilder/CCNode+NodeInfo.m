@@ -155,7 +155,7 @@
     
     id baseValue = [self valueForProperty:name atTime:0 sequenceId:seqId];
     
-    SequencerNodeProperty* seqNodeProp = [[[SequencerNodeProperty alloc] initWithProperty:name node:self] autorelease];
+    SequencerNodeProperty* seqNodeProp = [[SequencerNodeProperty alloc] initWithProperty:name node:self];
     if (![info.baseValues objectForKey:name])
     {
         [info.baseValues setObject:baseValue forKey:name];
@@ -178,6 +178,12 @@
         }
     }
     if (time > seq.timelineLength) return;
+    
+    //If not supported as animatable type, don't add.
+    if(![[self.plugIn animatablePropertiesForNode:self] containsObject:name])
+    {
+        return;
+    }
     
     // Save undo state
     [[AppDelegate appDelegate] saveUndoStateWillChangeProperty:@"*addkeyframe"];
@@ -227,7 +233,7 @@
         return nil;
     
     // Create keyframe
-    SequencerKeyframe* keyframe = [[[SequencerKeyframe alloc] init] autorelease];
+    SequencerKeyframe* keyframe = [[SequencerKeyframe alloc] init];
     keyframe.time = time;
     keyframe.type = keyframeType;
     keyframe.name = name;
@@ -294,7 +300,8 @@
     {
         seqValue = [seqNodeProp valueAtTime:time];
     }
-    if (seqValue) return seqValue;
+    if (seqValue)
+        return seqValue;
     
     // Check for base value
     NodeInfo* info = self.userObject;
@@ -307,7 +314,8 @@
     
     // Just use standard value
     if (type == kCCBKeyframeTypeDegrees
-        || type == kCCBKeyframeTypeByte)
+        || type == kCCBKeyframeTypeByte
+        || type == kCCBKeyframeTypeFloat)
     {
         return [self valueForKey:name];
     }
@@ -334,10 +342,8 @@
     }
     else if (type == kCCBKeyframeTypeColor3)
     {
-        NSValue* colorValue = [self valueForKey:name];
-        ccColor3B c;
-        [colorValue getValue:&c];
-        return [CCBWriterInternal serializeColor3:c];
+        CCColor* colorValue = [self valueForKey:name];
+        return [CCBWriterInternal serializeColor4:colorValue];
     }
     else if (type == kCCBKeyframeTypeSpriteFrame)
     {
@@ -394,8 +400,7 @@
     }
     else if (type == kCCBKeyframeTypeColor3)
     {
-        ccColor3B c = [CCBReaderInternal deserializeColor3:value];
-        NSValue* colorValue = [NSValue value:&c withObjCType:@encode(ccColor3B)];
+        CCColor* colorValue = [CCBReaderInternal deserializeColor4:value];
         [self setValue:colorValue forKey:propName];
         
     }
@@ -406,7 +411,8 @@
         
         [TexturePropertySetter setSpriteFrameForNode:self andProperty:propName withFile:sprite andSheetFile:sheet];
     }
-    else if (type == kCCBKeyframeTypeByte)
+    else if (type == kCCBKeyframeTypeByte
+             ||type == kCCBKeyframeTypeFloat)
     {
         [self setValue:value forKey:propName];
     }
@@ -418,6 +424,7 @@
         [self setValue:[NSNumber numberWithFloat:x] forKey:[propName stringByAppendingString:@"X"]];
         [self setValue:[NSNumber numberWithFloat:y] forKey:[propName stringByAppendingString:@"Y"]];
     }
+    
 }
 
 - (void) updatePropertiesTime:(float)time sequenceId:(int)seqId
@@ -669,7 +676,7 @@
         
         for (NSString* propName in serProperties)
         {
-            SequencerNodeProperty* seqNodeProp = [[[SequencerNodeProperty alloc] initWithSerialization:[serProperties objectForKey:propName]] autorelease];
+            SequencerNodeProperty* seqNodeProp = [[SequencerNodeProperty alloc] initWithSerialization:[serProperties objectForKey:propName]];
             [properties setObject:seqNodeProp forKey:propName];
         }
         
@@ -687,6 +694,8 @@
     NodeInfo* info = node.userObject;
     
     if (info.displayName && ![info.displayName isEqualToString:@""]) return info.displayName;
+    
+    if (node.name != nil && ![node.name isEqualToString:@""]) return node.name;
     
     // Get class name
     NSString* className = @"";
@@ -763,7 +772,7 @@
     
     for (id serSetting in ser)
     {
-        [customProps addObject:[[[CustomPropSetting alloc] initWithSerialization:serSetting] autorelease]];
+        [customProps addObject:[[CustomPropSetting alloc] initWithSerialization:serSetting]];
     }
     
     self.customProperties = customProps;
@@ -775,7 +784,7 @@
     
     for (id serSetting in ser)
     {
-        CustomPropSetting* setting = [[[CustomPropSetting alloc] initWithSerialization:serSetting] autorelease];
+        CustomPropSetting* setting = [[CustomPropSetting alloc] initWithSerialization:serSetting];
         [self setCustomPropertyNamed:setting.name value:setting.value];
     }
 }

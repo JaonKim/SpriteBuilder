@@ -3,19 +3,19 @@
 <plist version="1.0">
 <dict>
 	<key>displayName</key>
-	<string>Layer Gradient</string>
+	<string>Gradient Node</string>
 	<key>ordering</key>
-	<integer>1030</integer>
+	<integer>5000</integer>
 	<key>description</key>
-	<string>A layer filled with a gradient.</string>
+	<string>Draws a square area filled with a gradient.</string>
 	<key>inheritsFrom</key>
 	<string>CCNode</string>
 	<key>canHaveChildren</key>
 	<true/>
 	<key>className</key>
-	<string>CCLayerGradient</string>
+	<string>CCNodeGradient</string>
 	<key>editorClassName</key>
-	<string>CCBPLayerGradient</string>
+	<string>CCBPNodeGradient</string>
 	<key>spriteFrameDrop</key>
 	<dict>
 		<key>className</key>
@@ -43,9 +43,9 @@
 	<array>
 		<dict>
 			<key>displayName</key>
-			<string>CCLayerGradient</string>
+			<string>CCNodeGradient</string>
 			<key>name</key>
-			<string>CCLayerGradient</string>
+			<string>CCNodeGradient</string>
 			<key>type</key>
 			<string>Separator</string>
 			<key>dontSetInEditor</key>
@@ -54,9 +54,10 @@
 		<dict>
 			<key>default</key>
 			<array>
-				<integer>19</integer>
-				<integer>0</integer>
-				<integer>255</integer>
+				<real>0.21</real>
+				<real>0.65</real>
+				<real>0.87</real>
+				<integer>1</integer>
 			</array>
 			<key>displayName</key>
 			<string>Start color</string>
@@ -67,22 +68,23 @@
 		</dict>
 		<dict>
 			<key>defaultSerialization</key>
-			<integer>255</integer>
+			<integer>1</integer>
 			<key>default</key>
-			<integer>255</integer>
+			<integer>1</integer>
 			<key>displayName</key>
 			<string>Start opacity</string>
 			<key>type</key>
-			<string>Byte</string>
+			<string>Float</string>
 			<key>name</key>
 			<string>startOpacity</string>
 		</dict>
 		<dict>
 			<key>default</key>
 			<array>
-				<integer>255</integer>
-				<integer>33</integer>
-				<integer>249</integer>
+				<real>0.13</real>
+				<real>0.5</real>
+				<real>0.8</real>
+				<integer>1</integer>
 			</array>
 			<key>displayName</key>
 			<string>End color</string>
@@ -93,13 +95,13 @@
 		</dict>
 		<dict>
 			<key>defaultSerialization</key>
-			<integer>255</integer>
+			<integer>1</integer>
 			<key>default</key>
-			<integer>255</integer>
+			<integer>1</integer>
 			<key>displayName</key>
 			<string>End opacity</string>
 			<key>type</key>
-			<string>Byte</string>
+			<string>Float</string>
 			<key>name</key>
 			<string>endOpacity</string>
 		</dict>

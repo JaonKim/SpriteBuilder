@@ -52,7 +52,6 @@ enum {
 @interface CCBWarnings : NSObject
 {
     NSString* warningsDescription;
-    NSMutableArray* warnings;
     NSMutableDictionary* warningsFiles;
     
     int currentTargetType;

@@ -72,7 +72,7 @@ typedef struct _PVRTexHeader
 
 + (Tupac*) tupac
 {
-    return [[[Tupac alloc] init] autorelease];
+    return [[Tupac alloc] init];
 }
 
 - (id)init
@@ -89,23 +89,12 @@ typedef struct _PVRTexHeader
     return self;
 }
 
-- (void)dealloc
-{
-    [filenames_ release];
-    [outputName_ release];
-    [outputFormat_ release];
-    [errorMessage release];
-    [_previewFile release];
-    
-    [super dealloc];
-}
 
 - (void)setErrorMessage:(NSString *)em
 {
     if (em != errorMessage)
     {
-        [errorMessage release];
-        errorMessage = [em retain];
+        errorMessage = em;
     }
 }
 
@@ -194,7 +183,6 @@ typedef struct _PVRTexHeader
     // Reset the error message
     if (errorMessage)
     {
-        [errorMessage release];
         errorMessage = NULL;
     }
     
@@ -216,8 +204,8 @@ typedef struct _PVRTexHeader
     for (NSString *filename in self.filenames)
     {
         // Load CGImage
-        CGDataProviderRef dataProvider = CGDataProviderCreateWithFilename([filename cStringUsingEncoding:NSUTF8StringEncoding]);
-        CGImageRef srcImage = CGImageCreateWithPNGDataProvider(dataProvider, NULL, NO, kCGRenderingIntentDefault);
+				CGImageSourceRef image_source = CGImageSourceCreateWithURL((__bridge CFURLRef)[NSURL fileURLWithPath:filename], NULL);
+				CGImageRef srcImage = CGImageSourceCreateImageAtIndex(image_source, 0, NULL);
         
         // Get info
         int w = (int)CGImageGetWidth(srcImage);
@@ -246,7 +234,7 @@ typedef struct _PVRTexHeader
         [images addObject:[NSValue valueWithPointer:srcImage]];
         
         // Relase objects (images released later)
-        CGDataProviderRelease(dataProvider);
+        CFRelease(image_source);
     }
     
     // Check that the output format is valid
@@ -375,7 +363,7 @@ typedef struct _PVRTexHeader
         if (rot)
         {
             // Rotate image 90 degrees
-            CGContextRef rotContext = CGBitmapContextCreate(NULL, w, h, 8, 32*h, colorSpace, kCGImageAlphaPremultipliedLast);
+            CGContextRef rotContext = CGBitmapContextCreate(NULL, w, h, 8, 32*w, colorSpace, kCGImageAlphaPremultipliedLast);
             CGContextSaveGState(rotContext);
             CGContextRotateCTM(rotContext, -M_PI/2);
             CGContextTranslateCTM(rotContext, -h, 0);
@@ -403,7 +391,7 @@ typedef struct _PVRTexHeader
     
     NSString *pngFilename  = [self.outputName stringByAppendingPathExtension:@"png"];
     
-    CFURLRef url = (CFURLRef)[NSURL fileURLWithPath:pngFilename];
+    CFURLRef url = (__bridge CFURLRef)[NSURL fileURLWithPath:pngFilename];
     CGImageRef imageDst = CGBitmapContextCreateImage(dstContext);
     CGImageDestinationRef destination = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
     CGImageDestinationAddImage(destination, imageDst, nil);
@@ -411,6 +399,9 @@ typedef struct _PVRTexHeader
     if (!CGImageDestinationFinalize(destination)) {
         NSLog(@"Failed to write image to %@", pngFilename);
     }
+    
+    CGImageRelease(imageDst);
+    CGContextRelease(dstContext);
     
     textureFileName = pngFilename;
     
@@ -425,7 +416,15 @@ typedef struct _PVRTexHeader
         [[NSFileManager defaultManager] copyItemAtPath:pngFilename toPath:self.previewFile error:NULL];
     }
     
-    textureFileName = [[FCFormatConverter defaultConverter] convertImageAtPath:pngFilename format:imageFormat_ dither:dither_ compress:compress_];
+
+    
+    NSError * error = nil;
+    
+    if(![[FCFormatConverter defaultConverter] convertImageAtPath:pngFilename format:imageFormat_ dither:dither_ compress:compress_ isSpriteSheet:YES outputFilename:&textureFileName error:&error])
+    {
+        [self setErrorMessage:error.localizedDescription];
+        
+    }
     
     // Metadata File Export
     textureFileName = [textureFileName lastPathComponent];
@@ -489,7 +488,6 @@ typedef struct _PVRTexHeader
         [metadata setObject:NSStringFromSize(NSMakeSize(outW, outH))        forKey:@"size"];
         
         [outDict writeToFile:[self.outputName stringByAppendingPathExtension:@"plist"] atomically:YES];
-        [outDict release];
     }
     else if ([self.outputFormat isEqualToString:TupacOutputFormatAndEngine]) {
         fprintf(stderr, "[MO] output format %s not yet supported\n", [self.outputFormat UTF8String]);
@@ -510,7 +508,8 @@ typedef struct _PVRTexHeader
         
         for (NSString* file in files)
         {
-            if ([[[file pathExtension] lowercaseString] isEqualToString:@"png"])
+				    NSString *lower = [[file pathExtension] lowercaseString];
+            if ([lower isEqualToString:@"png"] || [lower isEqualToString:@"psd"])
             {
                 [allFiles addObject:[file lastPathComponent]];
             }

@@ -39,14 +39,14 @@
     // Setup menu
     [menu removeAllItems];
     
-    NSArray* strComps = [extra componentsSeparatedByString:@"|"];
+    NSArray* strComps = [self.extra componentsSeparatedByString:@"|"];
     
     for (int i = 0; i < [strComps count]/2; i++)
     {
         NSString* title = [strComps objectAtIndex:i*2];
         int tag = [[strComps objectAtIndex:i*2+1] intValue];
         
-        NSMenuItem* item = [[[NSMenuItem alloc] initWithTitle:title action:NULL keyEquivalent:@""] autorelease];
+        NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:title action:NULL keyEquivalent:@""];
         [item setTag:tag];
         
         [menu addItem:item];

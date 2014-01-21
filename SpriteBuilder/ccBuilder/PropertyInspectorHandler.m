@@ -48,7 +48,7 @@
         return;
     }
     
-    PropertyInspectorTemplate* templ = [[[PropertyInspectorTemplate alloc] initWithNode:node name:newName bgColor:newTemplateBgColor.color] autorelease];
+    PropertyInspectorTemplate* templ = [[PropertyInspectorTemplate alloc] initWithNode:node name:newName bgColor:newTemplateBgColor.color];
     
     [templateLibrary addTemplate:templ];
     
@@ -75,9 +75,9 @@
     [[AppDelegate appDelegate] saveUndoStateWillChangeProperty:@"*template"];
     [templ applyToNode:node];
     
-    if ([node isKindOfClass:[CCParticleSystemQuad class]])
+    if ([node isKindOfClass:[CCParticleSystem class]])
     {
-        CCParticleSystemQuad* particles = (CCParticleSystemQuad*)node;
+        CCParticleSystem* particles = (CCParticleSystem*)node;
         [particles stopSystem];
         [particles resetSystem];
     }
@@ -111,7 +111,6 @@
     [zipTask setArguments:args];
     [zipTask launch];
     [zipTask waitUntilExit];
-    [zipTask release];
 }
 
 - (void) loadTemplateLibrary

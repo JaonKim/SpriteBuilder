@@ -58,11 +58,6 @@
     return self;
 }
 
-- (void) dealloc
-{
-    [guides release];
-    [super dealloc];
-}
 
 - (void) updateGuides
 {
@@ -82,7 +77,8 @@
             
             if (CGRectContainsPoint(viewRect, viewPos))
             {
-                CCSprite9Slice* sprtGuide = [CCSprite9Slice spriteWithFile:@"ruler-guide.png"];
+                CCSprite9Slice* sprtGuide = [CCSprite9Slice spriteWithImageNamed:@"ruler-guide.png"];
+                sprtGuide.contentSizeType = CCSizeTypeMake(CCSizeUnitPoints, CCSizeUnitUIPoints);
                 sprtGuide.contentSize = CGSizeMake(winSize.width, 2);
                 sprtGuide.anchorPoint = ccp(0, 0.5f);
                 sprtGuide.position = viewPos;
@@ -96,7 +92,8 @@
             
             if (CGRectContainsPoint(viewRect, viewPos))
             {
-                CCSprite9Slice* sprtGuide = [CCSprite9Slice spriteWithFile:@"ruler-guide.png"];
+                CCSprite9Slice* sprtGuide = [CCSprite9Slice spriteWithImageNamed:@"ruler-guide.png"];
+                sprtGuide.contentSizeType = CCSizeTypeMake(CCSizeUnitPoints, CCSizeUnitUIPoints);
                 sprtGuide.contentSize = CGSizeMake(winSize.height, 2);
                 sprtGuide.anchorPoint = ccp(0, 0.5f);
                 sprtGuide.rotation = -90;
@@ -109,7 +106,7 @@
 
 - (int) addGuideWithOrientation:(int)orientation
 {
-    Guide* g = [[[Guide alloc] init] autorelease];
+    Guide* g = [[Guide alloc] init];
     g->orientation = orientation;
     
     [guides addObject:g];
@@ -282,7 +279,7 @@
         int orientation = [[gDict objectForKey:@"orientation"] intValue];
         float pos = [[gDict objectForKey:@"position"] floatValue];
         
-        Guide* g = [[[Guide alloc] init] autorelease];
+        Guide* g = [[Guide alloc] init];
         g->position = pos;
         g->orientation = orientation;
         [guides addObject:g];

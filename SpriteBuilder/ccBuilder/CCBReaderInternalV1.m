@@ -47,10 +47,6 @@
     return self;
 }
 
-- (void)dealloc
-{
-    [super dealloc];
-}
 
 #pragma mark Read properties from dictionary
 
@@ -135,7 +131,7 @@
         ![node isKindOfClass:[CCLabelBMFont class]])
     {
         CGSize contentSize = [CCBReaderInternalV1 sizeValFromDict:props forKey:@"contentSize"];
-        [PositionPropertySetter setSize:NSSizeFromCGSize(contentSize) type:CCContentSizeTypePoints forNode:node prop:@"contentSize"];
+        [PositionPropertySetter setSize:NSSizeFromCGSize(contentSize) type:CCSizeTypePoints forNode:node prop:@"contentSize"];
     }
     float scaleX = [CCBReaderInternalV1 floatValFromDict:props forKey:@"scaleX"];
     float scaleY = [CCBReaderInternalV1 floatValFromDict:props forKey:@"scaleY"];
@@ -170,18 +166,18 @@
     [CCBReaderInternalV1 setExtraProp:[props objectForKey:@"keyboardEnabled"] forKey:@"keyboardEnabled" andNode:node];
 }
 
-+ (void) setPropsForLayerColor: (CCLayerColor*) node props:(NSDictionary*)props
++ (void) setPropsForLayerColor: (CCNodeColor*) node props:(NSDictionary*)props
 {
-    [node setColor: [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"]];
+    //[node setColor: [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"]];
     [node setOpacity: [CCBReaderInternalV1 intValFromDict:props forKey:@"opacity"]];
     node.blendFunc = [CCBReaderInternalV1 blendFuncValFromDict:props forKey:@"blendFunc"];
 }
 
-+ (void) setPropsForLayerGradient: (CCLayerGradient*) node props:(NSDictionary*)props
++ (void) setPropsForLayerGradient: (CCNodeGradient*) node props:(NSDictionary*)props
 {
-    [node setStartColor: [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"]];
+    //[node setStartColor: [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"]];
     [node setStartOpacity: [CCBReaderInternalV1 intValFromDict:props forKey:@"opacity"]];
-    [node setEndColor: [CCBReaderInternalV1 color3ValFromDict:props forKey:@"endColor"]];
+    //[node setEndColor: [CCBReaderInternalV1 color3ValFromDict:props forKey:@"endColor"]];
     [node setEndOpacity: [CCBReaderInternalV1 intValFromDict:props forKey:@"endOpacity"]];
     node.vector = [CCBReaderInternalV1 pointValFromDict:props forKey:@"vector"];
 }
@@ -199,7 +195,7 @@
     [TexturePropertySetter setSpriteFrameForNode:node andProperty:@"displayFrame" withFile:[props objectForKey:@"spriteFile"] andSheetFile:[props objectForKey:@"spriteFramesFile"]];
     
     node.opacity = [CCBReaderInternalV1 intValFromDict:props forKey:@"opacity"];
-    node.color = [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"];
+    //node.color = [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"];
     node.flipX = [CCBReaderInternalV1 boolValFromDict:props forKey:@"flipX"];
     node.flipY = [CCBReaderInternalV1 boolValFromDict:props forKey:@"flipY"];
     node.blendFunc = [CCBReaderInternalV1 blendFuncValFromDict:props forKey:@"blendFunc"];
@@ -210,7 +206,7 @@
     NSString* string = [props objectForKey:@"string"];
     
     node.opacity = [CCBReaderInternalV1 intValFromDict:props forKey:@"opacity"];
-    node.color = [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"];
+    //node.color = [CCBReaderInternalV1 color3ValFromDict:props forKey:@"color"];
     node.string = string;
     
     [CCBReaderInternalV1 setExtraProp:[props objectForKey:@"fontFile"] forKey:@"fontFile" andNode:node];
@@ -240,18 +236,18 @@
     node.startSizeVar = [CCBReaderInternalV1 intValFromDict:props forKey:@"startSizeVar"];
     node.endSize = [CCBReaderInternalV1 intValFromDict:props forKey:@"endSize"];
     node.endSizeVar = [CCBReaderInternalV1 intValFromDict:props forKey:@"endSizeVar"];
-    if ([node isKindOfClass:[CCParticleSystemQuad class]])
+    if ([node isKindOfClass:[CCParticleSystem class]])
     {
         node.startSpin = [CCBReaderInternalV1 intValFromDict:props forKey:@"startSpin"];
         node.startSpinVar = [CCBReaderInternalV1 intValFromDict:props forKey:@"startSpinVar"];
         node.endSpin = [CCBReaderInternalV1 intValFromDict:props forKey:@"endSpin"];
         node.endSpinVar = [CCBReaderInternalV1 intValFromDict:props forKey:@"endSpinVar"];
     }
-    node.startColor = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"startColor"];
-    node.startColorVar = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"startColorVar"];
-    node.endColor = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"endColor"];
-    node.endColorVar = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"endColorVar"];
-    node.blendFunc = [CCBReaderInternalV1 blendFuncValFromDict:props forKey:@"blendFunc"];
+    //node.startColor = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"startColor"];
+    //node.startColorVar = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"startColorVar"];
+    //node.endColor = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"endColor"];
+    //node.endColorVar = [CCBReaderInternalV1 color4fValFromDict:props forKey:@"endColorVar"];
+    //node.blendFunc = [CCBReaderInternalV1 blendFuncValFromDict:props forKey:@"blendFunc"];
     
     if (node.emitterMode == CCParticleSystemModeGravity)
     {
@@ -361,8 +357,8 @@
         
         [CCBReaderInternalV1 setPropsForNode:node props:props];
         [CCBReaderInternalV1 setPropsForLayer:(CCNode*)node props:props];
-        [CCBReaderInternalV1 setPropsForLayerColor:(CCLayerColor*)node props:props];
-        [CCBReaderInternalV1 setPropsForLayerGradient:(CCLayerGradient*)node props:props];
+        [CCBReaderInternalV1 setPropsForLayerColor:(CCNodeColor*)node props:props];
+        [CCBReaderInternalV1 setPropsForLayerGradient:(CCNodeGradient*)node props:props];
     }
     else if ([class isEqualToString:@"CCLayerColor"])
     {
@@ -370,7 +366,7 @@
         
         [CCBReaderInternalV1 setPropsForNode:node props:props];
         [CCBReaderInternalV1 setPropsForLayer:(CCNode*)node props:props];
-        [CCBReaderInternalV1 setPropsForLayerColor:(CCLayerColor*)node props:props];
+        [CCBReaderInternalV1 setPropsForLayerColor:(CCNodeColor*)node props:props];
     }
     else if ([class isEqualToString:@"CCLayer"])
     {

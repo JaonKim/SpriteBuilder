@@ -24,8 +24,10 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "cocos2d.h"
 
 CGPoint ccpRound(CGPoint pt);
+CGPoint ccpClosestPointOnLine(CGPoint v, CGPoint w, CGPoint p);
 
 @interface CCBUtil : NSObject
 + (void) setSelectedSubmenuItemForMenu:(NSMenu*)menu tag:(int)tag;

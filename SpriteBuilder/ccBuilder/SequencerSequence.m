@@ -200,6 +200,7 @@
     return [NSString stringWithFormat:@"%02d:%02d:%02d", mins,secs,frames];
 }
 
+@dynamic currentDisplayTime;
 - (NSString*) currentDisplayTime
 {
     return [self formatTime:timelinePosition];
@@ -216,6 +217,7 @@
     autoPlay = ap;
 }
 
+@dynamic lengthDisplayTime;
 - (NSString*) lengthDisplayTime
 {
     return [self formatTime:timelineLength];
@@ -244,7 +246,7 @@
         float pan = [[keyframe.value objectAtIndex:2] floatValue];
         float gain = [[keyframe.value objectAtIndex:3] floatValue];
         
-        NSString* absFile = [[AppDelegate appDelegate].resManager toAbsolutePath:soundFile];
+        NSString* absFile = [[ResourceManager sharedManager] toAbsolutePath:soundFile];
         if ([[NSFileManager defaultManager] fileExistsAtPath:absFile])
         {
             [[OALSimpleAudio sharedInstance] playEffect:absFile volume:gain pitch:pitch pan:pan loop:NO];
@@ -271,16 +273,9 @@
     
     [[CocosScene cocosScene].rootNode duplicateKeyframesFromSequenceId:sequenceId toSequenceId:seqId];
     
-    return [copy autorelease];
+    return copy;
 }
 
-- (void) dealloc
-{
-    self.name = NULL;
-    [callbackChannel release];
-    [soundChannel release];
-    [super dealloc];
-}
 
 - (id) copyWithZone:(NSZone*)zone
 {
@@ -296,8 +291,6 @@
     copy.chainedSequenceId = chainedSequenceId;
     copy.autoPlay = autoPlay;
     
-    [copy->callbackChannel release];
-    [copy->soundChannel release];
     
     copy->callbackChannel = [callbackChannel copy];
     copy->soundChannel = [soundChannel copy];

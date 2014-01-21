@@ -61,7 +61,7 @@ NSString * kClipboardChannelKeyframes   = @"com.cocosbuilder.channelkeyframes";
     self.type = [[ser valueForKey:@"type"] intValue];
     self.name = [ser valueForKey:@"name"];
     self.time = [[ser valueForKey:@"time"] floatValue];
-    self.easing = [[[SequencerKeyframeEasing alloc] initWithSerialization:[ser objectForKey:@"easing"]] autorelease];
+    self.easing = [[SequencerKeyframeEasing alloc] initWithSerialization:[ser objectForKey:@"easing"]];
     // fix possible broken easing/type combinations
     if (![self supportsFiniteTimeInterpolations]) {
         easing.type = kCCBKeyframeEasingInstant;
@@ -117,6 +117,10 @@ NSString * kClipboardChannelKeyframes   = @"com.cocosbuilder.channelkeyframes";
     {
         return kCCBKeyframeTypeFloatXY;
     }
+    else if([type isEqualToString:@"Float"])
+    {
+        return kCCBKeyframeTypeFloat;
+    }
     else
     {
         return kCCBKeyframeTypeUndefined;
@@ -155,7 +159,7 @@ NSString * kClipboardChannelKeyframes   = @"com.cocosbuilder.channelkeyframes";
         return ([[value objectAtIndex:0] floatValue] == [[keyframe.value objectAtIndex:0] floatValue]
                 && [[value objectAtIndex:1] floatValue] == [[keyframe.value objectAtIndex:1] floatValue]);
     }
-    else if (type == kCCBKeyframeTypeByte)
+    else if (type == kCCBKeyframeTypeByte || type == kCCBKeyframeTypeFloat)
     {
         return ([value intValue] == [keyframe.value intValue]);
     }
@@ -180,12 +184,5 @@ NSString * kClipboardChannelKeyframes   = @"com.cocosbuilder.channelkeyframes";
 }
 
 
-- (void) dealloc
-{
-    [value release];
-    [name release];
-    [easing release];
-    [super dealloc];
-}
 
 @end

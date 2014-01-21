@@ -26,10 +26,6 @@
         str = [[AppDelegate appDelegate].localizationEditorHandler translationForKey:str];
     }
     
-    if ([prop isEqualToString:@"tag"]) {
-        return;
-    }
-    
     [node setValue:str forKey:prop];
 }
 

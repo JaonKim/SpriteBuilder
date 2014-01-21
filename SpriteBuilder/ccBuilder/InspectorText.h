@@ -26,7 +26,7 @@
 
 @interface InspectorText : InspectorValue<NSTextFieldDelegate>
 
-@property (nonatomic,assign) NSAttributedString* text;
+@property (nonatomic) NSAttributedString* text;
 @property (nonatomic,assign) BOOL localize;
 @property (nonatomic,assign) BOOL hasTranslation;
 

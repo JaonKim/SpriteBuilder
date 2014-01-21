@@ -35,6 +35,7 @@
 #import <CoreGraphics/CGImage.h>
 #import <QTKit/QTKit.h>
 #import "CCBPublisher.h"
+#import "SoundFileImageController.h"
 
 #pragma mark RMSpriteFrame
 
@@ -42,12 +43,6 @@
 
 @synthesize spriteFrameName, spriteSheetFile;
 
-- (void) dealloc
-{
-    [spriteFrameName release];
-    [spriteSheetFile release];
-    [super dealloc];
-}
 
 - (NSImage*) preview
 {
@@ -63,12 +58,6 @@
 
 @synthesize animationFile, animationName;
 
-- (void) dealloc
-{
-    self.animationFile = NULL;
-    self.animationName = NULL;
-    [super dealloc];
-}
 
 @end
 
@@ -87,7 +76,7 @@
         NSMutableArray* spriteFrames = [NSMutableArray arrayWithCapacity:[spriteFrameNames count]];
         for (NSString* frameName in spriteFrameNames)
         {
-            RMSpriteFrame* frame = [[[RMSpriteFrame alloc] init] autorelease];
+            RMSpriteFrame* frame = [[RMSpriteFrame alloc] init];
             frame.spriteFrameName = frameName;
             frame.spriteSheetFile = self.filePath;
             
@@ -101,7 +90,7 @@
         NSMutableArray* animations = [NSMutableArray arrayWithCapacity:[animationNames count]];
         for (NSString* animationName in animationNames)
         {
-            RMAnimation* anim = [[[RMAnimation alloc] init] autorelease];
+            RMAnimation* anim = [[RMAnimation alloc] init];
             anim.animationName = animationName;
             anim.animationFile = self.filePath;
             
@@ -119,6 +108,7 @@
     }
 }
 
+@dynamic relativePath;
 - (NSString*) relativePath
 {
     return [ResourceManagerUtil relativePathFromAbsolutePath: self.filePath];
@@ -136,7 +126,7 @@
         
         NSString* autoPath = [[dirPath stringByAppendingPathComponent:resDirName] stringByAppendingPathComponent:fileName];
         
-        NSImage* img = [[[NSImage alloc] initWithContentsOfFile:autoPath] autorelease];
+        NSImage* img = [[NSImage alloc] initWithContentsOfFile:autoPath];
         return img;
     }
     
@@ -305,13 +295,6 @@
 
 // Deallocation
 
-- (void) dealloc
-{
-    [data release];
-    [modifiedTime release];
-    [filePath release];
-    [super dealloc];
-}
 
 @end
 
@@ -368,7 +351,7 @@
     {
         ProjectSettings* projectSettings = [AppDelegate appDelegate].projectSettings;
         
-        RMResource* dirRes = [[[RMResource alloc] init] autorelease];
+        RMResource* dirRes = [[RMResource alloc] init];
         dirRes.type = kCCBResTypeDirectory;
         dirRes.filePath = dirPath;
         
@@ -385,24 +368,10 @@
 {
     if (dp != dirPath)
     {
-        [dirPath release];
-        dirPath = [dp retain];
+        dirPath = dp;
     }
 }
 
-- (void) dealloc
-{
-    [resources release];
-    [any release];
-    [images release];
-    [animations release];
-    [bmFonts release];
-    [ttfFonts release];
-    [ccbFiles release];
-    [audioFiles release];
-    [dirPath release];
-    [super dealloc];
-}
 
 - (NSComparisonResult) compare:(RMDirectory*)dir
 {
@@ -456,7 +425,6 @@
 {
     NSMutableDictionary* fontInfo = [NSMutableDictionary dictionaryWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"FontListTTF" ofType:@"plist"]];
     systemFontList = [fontInfo objectForKey:@"supportedFonts"];
-    [systemFontList retain];
 }
 
 - (id) init
@@ -478,13 +446,7 @@
 
 - (void) dealloc
 {
-    [pathWatcher release];
-    [directories release];
-    [activeDirectories release];
-    [resourceObserver release];
-    [systemFontList release];
     self.activeDirectories = NULL;
-    [super dealloc];
 }
 
 - (NSArray*) getAddedDirs
@@ -555,6 +517,12 @@
     
     if (isDirectory)
     {
+        // Bitmap fonts are directories, but with an extension
+        if ([ext isEqualToString:@"bmfont"])
+        {
+            return kCCBResTypeBMFont;
+        }
+        
         // Hide resolution directories
         if ([[ResourceManager resIndependentDirs] containsObject:[file lastPathComponent]])
         {
@@ -573,6 +541,7 @@
         return kCCBResTypeNone;
     }
     else if ([ext isEqualToString:@"png"]
+        || [ext isEqualToString:@"psd"]
         || [ext isEqualToString:@"jpg"]
         || [ext isEqualToString:@"jpeg"])
     {
@@ -746,7 +715,6 @@
             [resources setObject:res forKey:file];
             
             if (res.type != kCCBResTypeNone) resourcesChanged = YES;
-            [res release];
         }
         
         res.touched = YES;
@@ -866,7 +834,7 @@
     }
     else
     {
-        dir = [[[RMDirectory alloc] init] autorelease];
+        dir = [[RMDirectory alloc] init];
         dir.count = 1;
         dir.dirPath = dirPath;
         [directories setObject:dir forKey:dirPath];
@@ -963,7 +931,7 @@
     [[[CCDirector sharedDirector] view] unlockOpenGLContext];
 }
 
-
+@dynamic mainActiveDirectoryPath; // prevent auto-synthesis of property ivar of the same name
 - (NSString*) mainActiveDirectoryPath
 {
     if ([activeDirectories count] == 0) return NULL;
@@ -975,7 +943,7 @@
 {
     // Find settings for the file
     NSString* fileName = [autoFile lastPathComponent];
-    RMResource* resource = [[[RMResource alloc] init] autorelease];
+    RMResource* resource = [[RMResource alloc] init];
     resource.filePath = [[[autoFile stringByDeletingLastPathComponent] stringByDeletingLastPathComponent] stringByAppendingPathComponent:fileName];
     resource.type = [ResourceManager getResourceTypeForFile:resource.filePath];
     int tabletScale = [[[AppDelegate appDelegate].projectSettings valueForResource:resource andKey:@"tabletScale"] intValue];
@@ -1011,17 +979,9 @@
     float scaleFactor = dstScale/srcScale;
     
     // Load src image
-    CGDataProviderRef dataProvider = CGDataProviderCreateWithFilename([autoFile UTF8String]);
-    
-    CGImageRef imageSrc;
-    BOOL isPng = [[autoFile lowercaseString] hasSuffix:@"png"];
-    //If it'a png file, use png dataprovider, or use jpg dataprovider
-    if (isPng) {
-        imageSrc= CGImageCreateWithPNGDataProvider(dataProvider, NULL, NO, kCGRenderingIntentDefault);
-    }else{
-        imageSrc = CGImageCreateWithJPEGDataProvider(dataProvider, NULL, NO, kCGRenderingIntentDefault);
-    }
-    
+		CGImageSourceRef image_source = CGImageSourceCreateWithURL((__bridge CFURLRef)[NSURL fileURLWithPath:autoFile], NULL);
+		CGImageRef imageSrc = CGImageSourceCreateImageAtIndex(image_source, 0, NULL);
+		    
     int wSrc = CGImageGetWidth(imageSrc);
     int hSrc = CGImageGetHeight(imageSrc);
 
@@ -1058,8 +1018,10 @@
     [[NSFileManager defaultManager] createDirectoryAtPath:[dstFile stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:NULL error:NULL];
     
     // Save the image
-    CFURLRef url = (CFURLRef)[NSURL fileURLWithPath:dstFile];
-    CGImageDestinationRef destination = CGImageDestinationCreateWithURL(url, isPng ? kUTTypePNG : kUTTypeJPEG, 1, NULL);
+    CFURLRef url = (__bridge CFURLRef)[NSURL fileURLWithPath:dstFile];
+		
+		CFStringRef out_type = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, (__bridge CFStringRef)([dstFile pathExtension]), NULL);
+    CGImageDestinationRef destination = CGImageDestinationCreateWithURL(url, out_type, 1, NULL);
     CGImageDestinationAddImage(destination, imageDst, nil);
     
     if (!CGImageDestinationFinalize(destination)) {
@@ -1070,7 +1032,6 @@
     CFRelease(destination);
     CGImageRelease(imageDst);
     CGImageRelease(imageSrc);
-    CFRelease(dataProvider);
     CFRelease(newContext);
     
     // Convert file to 8 bit if original uses indexed colors
@@ -1085,7 +1046,6 @@
         [pngTask setArguments:args];
         [pngTask launch];
         [pngTask waitUntilExit];
-        [pngTask release];
     }
     
     // Update modification time to match original file
@@ -1136,7 +1096,7 @@
             NSString* defaultDirName = [defaultFile stringByDeletingLastPathComponent];
             
             // Select by resolution
-            for (NSString* ext in res.exts)
+            for (__strong NSString* ext in res.exts)
             {
                 if ([ext isEqualToString:@""]) continue;
                 ext = [@"resources-" stringByAppendingString:ext];
@@ -1232,24 +1192,38 @@
     BOOL isDir = NO;
     if ([fm fileExistsAtPath:file isDirectory:&isDir] && isDir)
     {
-        // Handle directory
-        NSString* dirName = [file lastPathComponent];
-        NSString* dstDirNew = [dstDir stringByAppendingPathComponent:dirName];
+        NSString* ext = [[file pathExtension] lowercaseString];
         
-        // Create if not created
-        [fm createDirectoryAtPath:dstDirNew withIntermediateDirectories:YES attributes:NULL error:NULL];
-        
-        NSArray* dirFiles = [fm contentsOfDirectoryAtPath:file error:NULL];
-        for (NSString* fileName in dirFiles)
+        if ([ext isEqualToString:@"bmfont"])
         {
-            importedFile |= [ResourceManager importFile:[file stringByAppendingPathComponent:fileName] intoDir:dstDirNew];
+            // Handle bitmap fonts
+            
+            NSString* dstPath = [dstDir stringByAppendingPathComponent:[file lastPathComponent]];
+            [fm copyItemAtPath:file toPath:dstPath error:NULL];
+            
+            importedFile = YES;
+        }
+        else
+        {
+            // Handle regular directory
+            NSString* dirName = [file lastPathComponent];
+            NSString* dstDirNew = [dstDir stringByAppendingPathComponent:dirName];
+            
+            // Create if not created
+            [fm createDirectoryAtPath:dstDirNew withIntermediateDirectories:YES attributes:NULL error:NULL];
+            
+            NSArray* dirFiles = [fm contentsOfDirectoryAtPath:file error:NULL];
+            for (NSString* fileName in dirFiles)
+            {
+                importedFile |= [ResourceManager importFile:[file stringByAppendingPathComponent:fileName] intoDir:dstDirNew];
+            }
         }
     }
     else
     {
         // Handle regular file
         NSString* ext = [[file pathExtension] lowercaseString];
-        if ([ext isEqualToString:@"png"])
+        if ([ext isEqualToString:@"png"] || [ext isEqualToString:@"psd"])
         {
             // Handle image import
             
@@ -1267,25 +1241,30 @@
         {
             // Handle sound import
             
-            QTMovie* movie = [QTMovie movieWithFile:file error:NULL];
-            if (movie)
+            // Code should check the wav file to see if it is longer than 15 seconds and in that case use mp4 instead of caf
+            NSTimeInterval duration = [[SoundFileImageController sharedInstance] getFileDuration:file];
+            
+            // Copy the sound
+            NSString* dstPath = [dstDir stringByAppendingPathComponent:[file lastPathComponent]];
+            [fm copyItemAtPath:file toPath:dstPath error:NULL];
+            
+            if (duration > 15)
             {
-                QTTime duration = movie.duration;
-                float durationSeconds = ((float)duration.timeValue) / ((float)duration.timeScale);
-                
-                // Copy the sound
-                NSString* dstPath = [dstDir stringByAppendingPathComponent:[file lastPathComponent]];
-                [fm copyItemAtPath:file toPath:dstPath error:NULL];
-                
-                if (durationSeconds > 15)
-                {
-                    // Set iOS format to mp4 for long sounds
-                    ProjectSettings* settings = [AppDelegate appDelegate].projectSettings;
-                    NSString* relPath = [ResourceManagerUtil relativePathFromAbsolutePath:dstPath];
-                    [settings setValue:[NSNumber numberWithInt:kCCBPublishFormatSound_ios_mp4] forRelPath:relPath andKey:@"format_ios_sound"];
-                }
-                importedFile = YES;
+                // Set iOS format to mp4 for long sounds
+                ProjectSettings* settings = [AppDelegate appDelegate].projectSettings;
+                NSString* relPath = [ResourceManagerUtil relativePathFromAbsolutePath:dstPath];
+                [settings setValue:[NSNumber numberWithInt:kCCBPublishFormatSound_ios_mp4] forRelPath:relPath andKey:@"format_ios_sound"];
             }
+            importedFile = YES;
+        
+        }
+        else if ([ext isEqualToString:@"ttf"])
+        {
+            // Import fonts or other files that should just be copied
+            NSString* dstPath = [dstDir stringByAppendingPathComponent:[file lastPathComponent]];
+            [fm copyItemAtPath:file toPath:dstPath error:NULL];
+            
+            importedFile = YES;
         }
     }
     
@@ -1354,7 +1333,7 @@
     [[AppDelegate appDelegate] renamedDocumentPathFrom:srcPath to:dstPath];
     
     // Update resources
-    [[AppDelegate appDelegate].resManager reloadAllResources];
+    [[ResourceManager sharedManager] reloadAllResources];
     
     return YES;
 }
@@ -1400,7 +1379,7 @@
     [[AppDelegate appDelegate] renamedDocumentPathFrom:srcPath to:dstPath];
     
     // Update resources
-    [[AppDelegate appDelegate].resManager reloadAllResources];
+    [[ResourceManager sharedManager] reloadAllResources];
 }
 
 + (void) removeResource:(RMResource*) res

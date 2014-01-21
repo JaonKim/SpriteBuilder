@@ -29,16 +29,11 @@
 @synthesize fileName;
 @synthesize contents;
 
+@dynamic pageName;
 - (NSString*) pageName
 {
     return [fileName stringByDeletingPathExtension];
 }
 
-- (void) dealloc
-{
-    self.fileName = NULL;
-    self.contents = NULL;
-    [super dealloc];
-}
 
 @end

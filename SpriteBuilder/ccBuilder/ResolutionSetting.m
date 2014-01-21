@@ -60,10 +60,23 @@
     self.width = [[serialization objectForKey:@"width"] intValue];
     self.height = [[serialization objectForKey:@"height"] intValue];
     self.ext = [serialization objectForKey:@"ext"];
+		// TODO should store separate values for these.
     self.scale = [[serialization objectForKey:@"scale"] floatValue];
     self.centeredOrigin = [[serialization objectForKey:@"centeredOrigin"] boolValue];
     
     return self;
+}
+
+-(void)setScale:(float)_scale
+{
+	NSAssert(_scale > 0.0, @"scale must be positive.");
+	
+//	if(_scale <= 0.0){
+//		NSLog(@"WARNING: scale must be positive. (1.0 was substituted for %f)", _scale);
+//		_scale = 1.0;
+//	}
+	
+	scale = _scale;
 }
 
 - (id) serialize
@@ -82,8 +95,6 @@
 
 - (void) setExt:(NSString *)e
 {
-    [ext release];
-    [exts release];
     
     ext = [e copy];
     
@@ -93,22 +104,55 @@
     }
     else
     {
-        exts = [[e componentsSeparatedByString:@" "] retain];
+        exts = [e componentsSeparatedByString:@" "];
     }
 }
 
 - (void) dealloc
 {
-    self.name = NULL;
     self.ext = NULL;
-    [exts release];
     
-    [super dealloc];
 }
+
++ (ResolutionSetting*) settingFixed
+{
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
+    
+    setting.name = @"Fixed";
+    setting.width = 0;
+    setting.height = 0;
+    setting.ext = @"tablet phonehd";
+    setting.scale = 2;
+    
+    return setting;
+}
+
++ (ResolutionSetting*) settingFixedLandscape
+{
+    ResolutionSetting* setting = [self settingFixed];
+    
+    setting.name = @"Fixed Landscape";
+    setting.width = 568;
+    setting.height = 384;
+    
+    return setting;
+}
+
++ (ResolutionSetting*) settingFixedPortrait
+{
+    ResolutionSetting* setting = [self settingFixed];
+    
+    setting.name = @"Fixed Portrait";
+    setting.width = 384;
+    setting.height = 568;
+    
+    return setting;
+}
+
 
 + (ResolutionSetting*) settingIPhone
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Phone";
     setting.width = 0;
@@ -165,7 +209,7 @@
 
 + (ResolutionSetting*) settingIPad
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Tablet";
     setting.width = 0;
@@ -181,8 +225,8 @@
     ResolutionSetting* setting = [self settingIPad];
     
     setting.name = @"Tablet Landscape";
-    setting.width = 1024;
-    setting.height = 768;
+    setting.width = 512;
+    setting.height = 384;
     
     return setting;
 }
@@ -192,21 +236,21 @@
     ResolutionSetting* setting = [self settingIPad];
     
     setting.name = @"Tablet Portrait";
-    setting.width = 768;
-    setting.height = 1024;
+    setting.width = 384;
+    setting.height = 512;
     
     return setting;
 }
 
 + (ResolutionSetting*) settingAndroidXSmall
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Android X-Small";
     setting.width = 0;
     setting.height = 0;
     setting.ext = @"phone";
-    setting.scale = 0.5f;
+    setting.scale = 0.5;
     
     return setting;
 }
@@ -235,7 +279,7 @@
 
 + (ResolutionSetting*) settingAndroidSmall
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Android Small";
     setting.width = 0;
@@ -270,13 +314,13 @@
 
 + (ResolutionSetting*) settingAndroidMedium
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Android Medium";
     setting.width = 0;
     setting.height = 0;
     setting.ext = @"phone";
-    setting.scale = 1.5f;
+    setting.scale = 1.5;
     
     return setting;
 }
@@ -305,7 +349,7 @@
 
 + (ResolutionSetting*) settingAndroidLarge
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Android Large";
     setting.width = 0;
@@ -340,7 +384,7 @@
 
 + (ResolutionSetting*) settingAndroidXLarge
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"Android X-Large";
     setting.width = 0;
@@ -375,7 +419,7 @@
 
 + (ResolutionSetting*) settingHTML5
 {
-    ResolutionSetting* setting = [[[ResolutionSetting alloc] init] autorelease];
+    ResolutionSetting* setting = [[ResolutionSetting alloc] init];
     
     setting.name = @"HTML 5";
     setting.width = 0;

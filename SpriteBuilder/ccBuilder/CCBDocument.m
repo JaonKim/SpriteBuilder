@@ -49,7 +49,7 @@
     self = [super init];
     if (self) {
         // Initialization code here.
-        self.undoManager = [[[NSUndoManager alloc] init] autorelease];
+        self.undoManager = [[NSUndoManager alloc] init];
     }
     
     self.stageZoom = 1;
@@ -58,25 +58,13 @@
     return self;
 }
 
-- (void)dealloc
-{
-    [fileName release];
-    [exportPath release];
-    [exportPlugIn release];
-    [docData release];
-    [undoManager release];
-    [lastEditedProperty release];
-    [resolutions release];
-    [sequences release];
-    
-    [super dealloc];
-}
 
 - (NSString*) formattedName
 {
     return [[self.fileName lastPathComponent] stringByDeletingPathExtension];
 }
 
+@dynamic rootPath;
 - (NSString*) rootPath
 {
     return [fileName stringByDeletingLastPathComponent];
@@ -87,8 +75,7 @@
     // Set new filename
     if (fn != fileName)
     {
-        [fileName release];
-        fileName = [fn retain];
+        fileName = fn;
     }
 }
 

@@ -47,7 +47,7 @@
     
     BOOL autoPlay;
     
-    SequencerSettingsWindow* settingsWindow;
+    SequencerSettingsWindow* __weak settingsWindow;
 }
 
 @property (nonatomic,assign) float timelineScale;
@@ -67,7 +67,7 @@
 
 @property (nonatomic,assign) BOOL autoPlay;
 
-@property (nonatomic,assign) SequencerSettingsWindow* settingsWindow;
+@property (nonatomic,weak) SequencerSettingsWindow* settingsWindow;
 
 // Convert between actual time and position in sequence view
 - (float) timeToPosition:(float)time;

@@ -26,15 +26,12 @@
 
 @interface InspectorStartStop : InspectorValue
 {
-    NSString* startName;
-    NSString* stopName;
-    
     NSString* startMethod;
     NSString* stopMethod;
 }
 
-@property (nonatomic,assign) NSString* startName;
-@property (nonatomic,assign) NSString* stopName;
+@property (nonatomic) NSString* startName;
+@property (nonatomic) NSString* stopName;
 
 - (IBAction)pressedStart:(id)sender;
 - (IBAction)pressedStop:(id)sender;

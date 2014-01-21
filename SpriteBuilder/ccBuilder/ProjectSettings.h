@@ -29,29 +29,14 @@
 
 enum
 {
-    kCCBDesignTargetAdaptive,
-    kCCBDesignTargetPhone,
-    kCCBDesignTargetTablet,
-};
-
-enum
-{
-    kCCBDeviceScalingCrop,
-    kCCBDeviceScalingBlackBorders,
-    kCCBDeviceScalingStretchTallSide,
+    kCCBDesignTargetFlexible,
+    kCCBDesignTargetFixed,
 };
 
 enum
 {
     kCCBOrientationLandscape,
     kCCBOrientationPortrait,
-};
-
-enum
-{
-    kCCBTabletScale200,
-    kCCBTabletScale180,
-    kCCBTabletScale240,
 };
 
 @class RMResource;
@@ -61,7 +46,6 @@ enum
 {
     NSString* projectPath;
     NSMutableArray* resourcePaths;
-    NSMutableDictionary* breakpoints;
     NSMutableDictionary* resourceProperties;
     
     NSString* publishDirectory;
@@ -115,7 +99,7 @@ enum
 
 @property (nonatomic, copy) NSString* projectPath;
 @property (nonatomic, readonly) NSString* projectPathHashed;
-@property (nonatomic, retain) NSMutableArray* resourcePaths;
+@property (nonatomic, strong) NSMutableArray* resourcePaths;
 
 @property (nonatomic,assign) BOOL publishEnablediPhone;
 @property (nonatomic,assign) BOOL publishEnabledAndroid;
@@ -152,9 +136,9 @@ enum
 @property (nonatomic, assign) BOOL onlyPublishCCBs;
 @property (nonatomic, readonly) NSArray* absoluteResourcePaths;
 @property (nonatomic, copy) NSString* exporter;
-@property (nonatomic, retain) NSMutableArray* availableExporters;
+@property (nonatomic, strong) NSMutableArray* availableExporters;
 @property (nonatomic, readonly) NSString* displayCacheDirectory;
-@property (nonatomic, readonly) NSString* publishCacheDirectory;
+//@property (nonatomic, readonly) NSString* publishCacheDirectory;
 @property (nonatomic, readonly) NSString* tempSpriteSheetCacheDirectory;
 @property (nonatomic, assign) BOOL deviceOrientationPortrait;
 @property (nonatomic, assign) BOOL deviceOrientationUpsideDown;
@@ -162,7 +146,6 @@ enum
 @property (nonatomic, assign) BOOL deviceOrientationLandscapeRight;
 @property (nonatomic, assign) int resourceAutoScaleFactor;
 
-@property (nonatomic,readonly) NSDictionary* breakpoints;
 @property (nonatomic, copy) NSString* versionStr;
 @property (nonatomic, assign) BOOL needRepublish;
 
@@ -170,9 +153,8 @@ enum
 @property (nonatomic, assign) int defaultOrientation;
 @property (nonatomic, assign) int deviceScaling;
 @property (nonatomic, assign) float tabletPositionScaleFactor;
-@property (nonatomic, assign) int tabletPositionScaleFactorType;
 
-@property (nonatomic, retain) CCBWarnings* lastWarnings;
+@property (nonatomic, strong) CCBWarnings* lastWarnings;
 
 - (id) initWithSerialization:(id)dict;
 - (BOOL) store;
@@ -200,7 +182,5 @@ enum
 - (void) removedResourceAt:(NSString*) relPath;
 - (void) movedResourceFrom:(NSString*) relPathOld to:(NSString*) relPathNew;
 
-// Breakpoints (for JS)
-- (void) toggleBreakpointForFile:(NSString*)file onLine:(int)line;
-- (NSSet*) breakpointsForFile:(NSString*)file;
+- (NSString* ) getVersion;
 @end

@@ -74,6 +74,7 @@
 {
     NSPoint pt = [self convertPoint:[sender draggingLocation] fromView:NULL];
     pt = NSMakePoint(roundf(pt.x),roundf(pt.y));
+    pt = [[CCDirectorMac sharedDirector] convertToGL:pt];
     
     NSPasteboard* pb = [sender draggingPasteboard];
     
@@ -124,6 +125,11 @@
 - (void)cursorUpdate:(NSEvent *)event
 {
     [[CocosScene cocosScene] cursorUpdate:event];
+}
+
+-(void) dealloc
+{
+	SBLogSelf();
 }
 
 @end

@@ -28,6 +28,8 @@
 #import "AppDelegate.h"
 #import "CCBTransparentView.h"
 #import "CCBTransparentWindow.h"
+#import "CCBUtil.h"
+#import "MainWindow.h"
 
 @implementation NotesLayer
 
@@ -44,7 +46,7 @@
 - (void) addNote
 {
     [[AppDelegate appDelegate] saveUndoStateWillChangeProperty:@"*notes"];
-    StickyNote* note = [[[StickyNote alloc] init] autorelease];
+    StickyNote* note = [[StickyNote alloc] init];
     note.docPos = ccp(10,150);
     [self addChild:note];
 }
@@ -55,7 +57,7 @@
     
     // Setup text area and add it to guiLayer
     CGSize size = note.contentSize;
-    CGPoint pos = ccp(note.position.x, note.position.y - note.contentSize.height);
+    CGPoint pos = ccp(note.position.x * [CCDirector sharedDirector].contentScaleFactor, note.position.y * [CCDirector sharedDirector].contentScaleFactor - note.contentSize.height);
     
     [NSBundle loadNibNamed:@"StickyNoteEditView" owner:self];
     [editView setFrameOrigin:NSPointFromCGPoint(pos)];
@@ -126,10 +128,8 @@
         modifiedNote = note;
         
         // Reorder the child to the top
-        [note retain];
         [self removeChild:note cleanup:NO];
         [self addChild:note];
-        [note release];
         
         return YES;
     }
@@ -151,7 +151,8 @@
         [[AppDelegate appDelegate] saveUndoStateWillChangeProperty:@"*notes"];
         
         CGPoint delta = ccpSub(pt, mouseDownPos);
-        modifiedNote.docPos = ccpAdd(noteStartPos, delta);
+        
+        modifiedNote.docPos = ccpRound(ccpAdd(noteStartPos, delta));
         return YES;
     }
     else if (operation == kCCBNoteOperationResizing)
@@ -159,12 +160,16 @@
         [[AppDelegate appDelegate] saveUndoStateWillChangeProperty:@"*notes"];
         
         CGPoint delta = ccpSub(pt, mouseDownPos);
+        delta = ccpMult(delta, [CCDirector sharedDirector].contentScaleFactor);
         CGSize newSize;
         newSize.width = noteStartSize.width + delta.x;
         newSize.height = noteStartSize.height - delta.y;
         
         if (newSize.width < 60) newSize.width = 60;
         if (newSize.height < 60) newSize.height = 60;
+        
+        newSize.width = roundf(newSize.width);
+        newSize.height = roundf(newSize.height);
         
         modifiedNote.contentSize = newSize;
         return YES;
@@ -250,7 +255,7 @@
     
     for (NSDictionary* serNote in ser)
     {
-        StickyNote* note = [[[StickyNote alloc] init] autorelease];
+        StickyNote* note = [[StickyNote alloc] init];
         
         // Load text
         note.noteText = [serNote objectForKey:@"text"];
