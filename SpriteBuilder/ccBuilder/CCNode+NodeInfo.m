@@ -572,13 +572,29 @@
     
     NodeInfo* info = self.userObject;
     NSMutableDictionary* seq = [info.animatableProperties objectForKey:[NSNumber numberWithInt:seqId]];
+    
     if (seq)
     {
+        
         NSEnumerator* seqEnum = [seq objectEnumerator];
         SequencerNodeProperty* seqNodeProp;
+        NSMutableArray* emptyProps = [NSMutableArray array];
+        
         while ((seqNodeProp = [seqEnum nextObject]))
         {
             [seqNodeProp deleteKeyframesAfterTime:time];
+            
+            if (seqNodeProp.keyframes.count == 0)
+            {
+                [emptyProps addObject:seqNodeProp.propName];
+            }
+            
+        }
+        
+        // Remove empty seq node props
+        for (NSString* propName in emptyProps)
+        {
+            [seq removeObjectForKey:propName];
         }
     }
     // Also remove keyframes for children
@@ -643,8 +659,8 @@
         {
             BOOL useFlashSkews = [self usesFlashSkew];
             if (useFlashSkews && [propName isEqualToString:@"rotation"]) continue;
-            if (!useFlashSkews && [propName isEqualToString:@"rotationX"]) continue;
-            if (!useFlashSkews && [propName isEqualToString:@"rotationY"]) continue;
+            if (!useFlashSkews && [propName isEqualToString:@"rotationalSkewX"]) continue;
+            if (!useFlashSkews && [propName isEqualToString:@"rotationalSkewY"]) continue;
             
             SequencerNodeProperty* seqNodeProp = [properties objectForKey:propName];
             [serProperties setObject:[seqNodeProp serialization] forKey:propName];

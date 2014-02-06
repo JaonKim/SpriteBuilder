@@ -101,13 +101,18 @@
 #import "CCBProjCreator.h"
 #import "CCTextureCache.h"
 #import "CCLabelBMFont_Private.h"
-#import "WarningOutlineHandler.h"
+#import "WarningTableViewHandler.h"
 #import "CCNode+NodeInfo.h"
 #import "CCNode_Private.h"
 #import "UsageManager.h"
 #import <ExceptionHandling/NSExceptionHandler.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
+#import "PlugInNodeCollectionView.h"
+
+@interface AppDelegate()
+- (NSString*)getPathOfMenuItem:(NSMenuItem*)item;
+@end
 
 @implementation AppDelegate
 
@@ -401,6 +406,21 @@ void ApplyCustomNodeVisitSwizzle()
 
 - (void) setupResourceManager
 {
+    
+    NSColor * color = [NSColor colorWithCalibratedRed:0.0f green:0.50f blue:0.50f alpha:1.0f];
+    
+    color = [color colorUsingColorSpace:[NSColorSpace deviceRGBColorSpace]];
+
+    CGFloat r, g, b, a;
+    [color getRed:&r green:&g blue:&b alpha:&a];
+    
+    CCColor* colorValue = [CCColor colorWithRed:r green:g blue:b alpha:1];
+    
+    NSColor * color2 = [NSColor colorWithDeviceRed:r green:g blue:b alpha:a];
+    NSColor * calibratedColor = [color2 colorUsingColorSpaceName:NSCalibratedRGBColorSpace];
+
+    NSLog(@"R:%f G:%f B:%f A:%f",calibratedColor.redComponent, calibratedColor.greenComponent, calibratedColor.blueComponent, calibratedColor.alphaComponent);
+    
     // Load resource manager
 	[ResourceManager sharedManager];
     
@@ -429,10 +449,12 @@ void ApplyCustomNodeVisitSwizzle()
     [previewViewOwner setPreviewFile:NULL];
     
     //Setup warnings outline
-    warningOutlineHandler = [[WarningOutlineHandler alloc] init];
-    outlineWarnings.delegate = warningOutlineHandler;
-    outlineWarnings.target = warningOutlineHandler;
-    outlineWarnings.dataSource = warningOutlineHandler;
+    warningHandler = [[WarningTableViewHandler alloc] init];
+    
+    self.warningTableView.delegate = warningHandler;
+    self.warningTableView.target = warningHandler;
+    self.warningTableView.dataSource = warningHandler;
+   // [self.warningTableView setGridStyleMask:NSTableViewSolidHorizontalGridLineMask];
     [self updateWarningsOutline];
 }
 
@@ -837,6 +859,8 @@ static BOOL hideAllToNextSeparator;
     
     // Create inspector
     InspectorValue* inspectorValue = [InspectorValue inspectorOfType:type withSelection:self.selectedNode andPropertyName:prop andDisplayName:displayName andExtra:e];
+	NSAssert3(inspectorValue, @"property '%@' (%@) not found in class %@", prop, type, NSStringFromClass([self.selectedNode class]));
+	
     lastInspectorValue.inspectorValueBelow = inspectorValue;
     lastInspectorValue = inspectorValue;
     inspectorValue.readOnly = readOnly;
@@ -980,8 +1004,8 @@ static BOOL hideAllToNextSeparator;
             // Handle Flash skews
             BOOL usesFlashSkew = [self.selectedNode usesFlashSkew];
             if (usesFlashSkew && [name isEqualToString:@"rotation"]) continue;
-            if (!usesFlashSkew && [name isEqualToString:@"rotationX"]) continue;
-            if (!usesFlashSkew && [name isEqualToString:@"rotationY"]) continue;
+            if (!usesFlashSkew && [name isEqualToString:@"rotationalSkewX"]) continue;
+            if (!usesFlashSkew && [name isEqualToString:@"rotationalSkewY"]) continue;
             
             // Handle read only for animated properties
             if ([self isDisabledProperty:name animatable:animated] || self.selectedNode.locked)
@@ -1615,10 +1639,10 @@ static BOOL hideAllToNextSeparator;
     return YES;
 }
 
-- (BOOL) createProject:(NSString*) fileName
+- (BOOL) createProject:(NSString*)fileName engine:(CCBTargetEngine)engine
 {
     CCBProjCreator* creator = [[CCBProjCreator alloc] init];
-    return [creator createDefaultProjectAtPath:fileName];
+    return [creator createDefaultProjectAtPath:fileName engine:engine];
 }
 
 - (void) updateResourcePathsFromProjectSettings
@@ -1696,7 +1720,10 @@ static BOOL hideAllToNextSeparator;
     
     // Update resource paths
     [self updateResourcePathsFromProjectSettings];
-    
+
+    // Update Node Plugins list
+	[plugInNodeViewHandler showNodePluginsForEngine:project.engine];
+	
     BOOL success = [self checkForTooManyDirectoriesInCurrentProject];
     if (!success) return NO;
     
@@ -1902,7 +1929,7 @@ static BOOL hideAllToNextSeparator;
     else if (type == kCCBNewDocTypeLayer)
     {
         // Set contentSize to w x h in scaled coordinates for layers
-        [PositionPropertySetter setSize:NSMakeSize(resolution.width, resolution.height) type:CCSizeTypeUIPoints forNode:[CocosScene cocosScene].rootNode prop:@"contentSize"];
+        [PositionPropertySetter setSize:NSMakeSize(resolution.width, resolution.height) type:CCSizeTypePoints forNode:[CocosScene cocosScene].rootNode prop:@"contentSize"];
     }
     
     [outlineHierarchy reloadData];
@@ -2267,9 +2294,9 @@ static BOOL hideAllToNextSeparator;
 - (IBAction) copy:(id) sender
 {
     //Copy warnings.
-    if([[self window] firstResponder] == outlineWarnings)
+    if([[self window] firstResponder] == _warningTableView)
     {
-        CCBWarning * warning = projectSettings.lastWarnings.warnings[outlineWarnings.selectedRow];
+        CCBWarning * warning = projectSettings.lastWarnings.warnings[_warningTableView.selectedRow];
         NSString * stringToWrite = warning.description;
         NSPasteboard* cb = [NSPasteboard generalPasteboard];
         
@@ -2573,7 +2600,7 @@ static BOOL hideAllToNextSeparator;
     
     NSSavePanel* saveDlg = [NSSavePanel savePanel];
     [saveDlg setAllowedFileTypes:[NSArray arrayWithObject:@"ccb"]];
-    SavePanelLimiter* limter = [[SavePanelLimiter alloc] initWithPanel:saveDlg];
+	__block SavePanelLimiter* limiter = [[SavePanelLimiter alloc] initWithPanel:saveDlg];
     
     [saveDlg beginSheetModalForWindow:window completionHandler:^(NSInteger result){
         if (result == NSOKButton)
@@ -2595,11 +2622,20 @@ static BOOL hideAllToNextSeparator;
                 [[[CCDirector sharedDirector] view] unlockOpenGLContext];
             });
         }
+		
+		// ensures the limiter remains in memory until the block finishes
+		limiter = nil;
     }];
 }
 
 - (IBAction) saveDocument:(id)sender
 {
+    // Finish editing inspector
+    if (![[self window] makeFirstResponder:[self window]])
+    {
+        return;
+    }
+    
     if (currentDocument && currentDocument.fileName)
     {
         [self saveFile:currentDocument.fileName];
@@ -2816,7 +2852,7 @@ static BOOL hideAllToNextSeparator;
     [self closeProject];
 }
 
-- (IBAction) menuNewProject:(id)sender
+-(void) createNewProjectTargetting:(CCBTargetEngine)engine
 {
     // Accepted create document, prompt for place for file
     NSSavePanel* saveDlg = [NSSavePanel savePanel];
@@ -2846,7 +2882,7 @@ static BOOL hideAllToNextSeparator;
                 
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0),
                                dispatch_get_current_queue(), ^{
-                                   if ([self createProject: fileName])
+                                   if ([self createProject:fileName engine:engine])
                                    {
                                        [self openProject:[fileNameRaw stringByAppendingPathExtension:@"spritebuilder"]];
                                    }
@@ -2862,6 +2898,16 @@ static BOOL hideAllToNextSeparator;
             }
         }
     }];
+}
+
+- (IBAction) menuNewProject:(id)sender
+{
+	[self createNewProjectTargetting:CCBTargetEngineCocos2d];
+}
+
+-(IBAction) menuNewSpriteKitProject:(id)sender
+{
+	[self createNewProjectTargetting:CCBTargetEngineSpriteKit];
 }
 
 - (IBAction) newFolder:(id)sender
@@ -3081,7 +3127,15 @@ static BOOL hideAllToNextSeparator;
 - (void) updatePositionScaleFactor
 {
     ResolutionSetting* res = [currentDocument.resolutions objectAtIndex:currentDocument.currentResolution];
-		
+	
+	if([CCDirector sharedDirector].contentScaleFactor != res.scale)
+    {
+        [[CCTextureCache sharedTextureCache] removeAllTextures];
+        [[CCSpriteFrameCache sharedSpriteFrameCache] removeSpriteFrames];
+        FNTConfigRemoveCache();
+    }
+    
+    
     [CCDirector sharedDirector].contentScaleFactor = res.scale;
     [CCDirector sharedDirector].UIScaleFactor = 1.0/res.scale;
     [[CCFileUtils sharedFileUtils] setMacContentScaleFactor:res.scale];
@@ -3202,8 +3256,8 @@ static BOOL hideAllToNextSeparator;
 
 - (void) updateWarningsOutline
 {
-    [warningOutlineHandler updateWithWarnings:projectSettings.lastWarnings];
-    [outlineWarnings reloadData];
+    [warningHandler updateWithWarnings:projectSettings.lastWarnings];
+    [self.warningTableView reloadData];
 }
 
 - (IBAction) menuSetCanvasBorder:(id)sender
@@ -3457,6 +3511,7 @@ static BOOL hideAllToNextSeparator;
     {
         [sequenceHandler deleteKeyframesForCurrentSequenceAfterTime:wc.duration];
         sequenceHandler.currentSequence.timelineLength = wc.duration;
+        [self updateInspectorFromSelection];
     }
 }
 
@@ -3949,21 +4004,16 @@ static BOOL hideAllToNextSeparator;
 
 - (IBAction)menuOpenExternal:(id)sender
 {
-    NSOutlineView* outlineView = [AppDelegate appDelegate].outlineProject;
-    
-    NSUInteger idx = [sender tag];
-    
-    NSString* filename = [[outlineView itemAtRow:idx] filePath];
-    if (![[NSWorkspace sharedWorkspace] openFile:filename])
-    {
-        NSRange slash = [filename rangeOfString:@"/" options:NSBackwardsSearch];
-        
-        if (slash.location != NSNotFound)
-        {
-            filename = [filename stringByReplacingCharactersInRange:slash withString: @"/resources-auto/"];
-            // Try again
-            [[NSWorkspace sharedWorkspace] openFile:filename];
-        }
+    NSString* path = [self getPathOfMenuItem:sender];
+    if (path) {
+        [[NSWorkspace sharedWorkspace] openFile:path];
+    }
+}
+- (IBAction)menuShowInFinder:(id)sender {
+    NSString* path = [self getPathOfMenuItem:sender];
+    if (path) {
+        [[NSWorkspace sharedWorkspace] selectFile:path inFileViewerRootedAtPath:@""];
+
     }
 }
 
@@ -4424,6 +4474,29 @@ static BOOL hideAllToNextSeparator;
     NSLog(@"DEBUG");
     
     [[ResourceManager sharedManager] debugPrintDirectories];
+}
+
+- (NSString*)getPathOfMenuItem:(NSMenuItem*)item
+{
+    NSOutlineView* outlineView = [AppDelegate appDelegate].outlineProject;
+    NSUInteger idx = [item tag];
+    NSString* fullpath = [[outlineView itemAtRow:idx] filePath];
+    
+    // if it doesn't exist, peek inside "resources-auto" (only needed in the case of resources, which has a different visual
+    // layout than what is actually on the disk).
+    // Should probably be removed and pulled into [RMResource filePath]
+    if ([[NSFileManager defaultManager] fileExistsAtPath:fullpath] == NO)
+    {
+        NSString* filename = [fullpath lastPathComponent];
+        NSString* directory = [fullpath stringByDeletingLastPathComponent];
+        fullpath = [NSString pathWithComponents:[NSArray arrayWithObjects:directory, @"resources-auto", filename, nil]];
+    }
+    
+    if ([[NSFileManager defaultManager] fileExistsAtPath:fullpath] == NO) {
+        return nil;
+    }
+    
+    return fullpath;
 }
 
 
